@@ -22,6 +22,8 @@
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dark.png?raw=true">
 
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/light.png?raw=true">
+
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
