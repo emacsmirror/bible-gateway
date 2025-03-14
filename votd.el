@@ -1,8 +1,13 @@
-;;; package --- votd: Bible Verse of the Day in Emacs
+;;; votd.el --- Verse Of The Day in Emacs -*- lexical-binding: t -*-
 
 ;;; Commentary:
 
+;; TODO
+
 ;;; Code:
+
+(require 'url)
+(require 'json)
 
 (defun split-with-spaces (str)
   "Split STR preserving original spacing between words."
