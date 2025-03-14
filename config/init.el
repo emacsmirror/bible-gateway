@@ -38,7 +38,7 @@
   (setq dashboard-footer-icon "")
   ;; Set up the dashboard footer using votd
   (require 'votd)
-  (setq dashboard-footer-messages (list (get-daily-verse-footer))))
+  (setq dashboard-footer-messages (list (get-votd))))
 
 
 (provide 'init)
