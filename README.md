@@ -75,7 +75,7 @@ new `:vc` keyword of `use-package` as follows:
 <!-- CONFIGURATION -->
 ## Configuration
 
-Here is a minimal init.el configuration to add the verse of the day to your dashboard footer:
+Here is a minimal [init.el](https://github.com/kristjoc/votd/blob/main/config/init.el) configuration to add the verse of the day to your dashboard footer:
 
 ``` commonlisp
 ;;; init.el --- Load minimal init.el configuration -*- lexical-binding: t -*-
@@ -124,6 +124,8 @@ Here is a minimal init.el configuration to add the verse of the day to your dash
 (provide 'init)
 ;;; init.el ends here
 ```
+
+And that's it! God bless you! Have a great day! :-)
 
 
 <!-- CONTRIBUTING -->
