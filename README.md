@@ -20,7 +20,7 @@
   </p>
 </p>
 
-#+html: <img src="https://github.com/kristjoc/votd/blob/screenshots/dark.png?raw=true">
+#+html: <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dark.png?raw=true">
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
