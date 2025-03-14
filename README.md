@@ -68,58 +68,40 @@ new `:vc` keyword of `use-package` as follows:
 ``` commonlisp
 (use-package votd
   :vc (:url "https://github.com/kristjoc/votd")) ; For Emacs>=30
-
 ```
 
 
 <!-- CONFIGURATION -->
 ## Configuration
 
-Here is a minimal [init.el](https://github.com/kristjoc/votd/blob/main/config/init.el) configuration to add the verse of the day to your dashboard footer:
+Here is a minimal `init.el` to add the verse of the day to your emacs-dashboard footer:
 
 ``` commonlisp
-;;; init.el --- Load minimal init.el configuration -*- lexical-binding: t -*-
-
+;;; init.el --- minimal init.el for emacs-dashboard & votd -*- lexical-binding: t -*-
 ;;; Commentary:
-
-;; This file bootstraps a minimal configuration for votd as footer in Emacs dashboard.
-
 ;;; Code:
 
-
-;; Melpa needed to install Emacs dashboard
+;; melpa needed for installing emacs-dashboard
 (with-eval-after-load 'package
   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
 
-;; Place any customize-based settings in custom.el.
+;; place any customize-based settings in custom.el.
 (setq custom-file "~/.emacs.d/custom.el")
 
-
-;; Install votd using :vc in use-package
-(use-package votd
-  :vc (:url "https://github.com/kristjoc/votd")) ; For Emacs>=30
-
-
-;; Emacs dashboard configuration
+;; emacs-dashboard config
 (use-package dashboard
   :ensure t
   :init
   (dashboard-setup-startup-hook)
   :config 
-  (setq dashboard-banner-logo-title "")
-  (setq dashboard-footer-messages '(""))
-  (setq dashboard-navigation-cycle t)
-  (setq dashboard-show-shortcuts nil)
-  (setq dashboard-center-content t)
-  (setq dashboard-vertically-center-content t)
-  (setq dashboard-items '((recents   . 3)
-                          (projects  . 3)
-                          (bookmarks . 3)))
-  (setq dashboard-footer-icon "")
-  ;; Set up the dashboard footer using votd
-  (require 'votd)
-  (setq dashboard-footer-messages (list (get-votd))))
+  (setq dashboard-center-content t))
 
+;; install votd with use-package using :vc
+(use-package votd
+  :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
+  :after dashboard
+  :config
+  (setq dashboard-footer-messages (list (get-votd)))) ; votd as emacs-dashboard footer
 
 (provide 'init)
 ;;; init.el ends here
