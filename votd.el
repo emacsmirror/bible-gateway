@@ -109,7 +109,7 @@
                   (concat (make-string (- fill-width (length ref-text)) ?\s)
                           ref-text)))))))
 
-(defun get-daily-verse-footer ()
+(defun get-votd ()
   "Get the daily verse for the dashboard footer with error handling."
   (condition-case err
       (fetch-daily-bible-verse)

@@ -42,19 +42,88 @@
 <!-- INTRODUCTION -->
 ## Introduction
 
-TODO
+votd is a simple Emacs package that fetches the Bible verse of the day
+from the [BibleGateway](https://www.biblegateway.com/).
+What it basically does is retrieve the content from the [BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
+API in JSON format and then format the text and reference accordingly.  
 
+I'm currently using it to display the verse of the day as a footer in the Emacs
+[dashboard](https://github.com/emacs-dashboard/emacs-dashboard), but
+one can use it as a message in the `*scratch*` buffer, etc.
 
 <!-- INSTALLATION -->
 ## Installation
 
-TODO
+votd is not yet in a package archive. For Emacs 29, you can use
+`package-vc-install`. Switch to the `*scratch*` buffer and `yank` the
+following line:
+
+``` commonlisp
+(package-vc-install '(votd :vc-backend Git :url  "https://github.com/kristjoc/votd"))
+```
+
+Hit `C-x C-e` once you move the cursor to the last parenthesis. For Emacs 30, you can use the
+new `:vc` keyword of `use-package` as follows:
+
+``` commonlisp
+(use-package votd
+  :vc (:url "https://github.com/kristjoc/votd")) ; For Emacs>=30
+
+```
 
 
 <!-- CONFIGURATION -->
 ## Configuration
 
-TODO
+Here is a minimal init.el configuration to add the verse of the day to your dashboard footer:
+
+``` commonlisp
+;;; init.el --- Load minimal init.el configuration -*- lexical-binding: t -*-
+
+;;; Commentary:
+
+;; This file bootstraps a minimal configuration for votd as footer in Emacs dashboard.
+
+;;; Code:
+
+
+;; Melpa needed to install Emacs dashboard
+(with-eval-after-load 'package
+  (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t))
+
+;; Place any customize-based settings in custom.el.
+(setq custom-file "~/.emacs.d/custom.el")
+
+
+;; Install votd using :vc in use-package
+(use-package votd
+  :vc (:url "https://github.com/kristjoc/votd")) ; For Emacs>=30
+
+
+;; Emacs dashboard configuration
+(use-package dashboard
+  :ensure t
+  :init
+  (dashboard-setup-startup-hook)
+  :config 
+  (setq dashboard-banner-logo-title "")
+  (setq dashboard-footer-messages '(""))
+  (setq dashboard-navigation-cycle t)
+  (setq dashboard-show-shortcuts nil)
+  (setq dashboard-center-content t)
+  (setq dashboard-vertically-center-content t)
+  (setq dashboard-items '((recents   . 3)
+                          (projects  . 3)
+                          (bookmarks . 3)))
+  (setq dashboard-footer-icon "")
+  ;; Set up the dashboard footer using votd
+  (require 'votd)
+  (setq dashboard-footer-messages (list (get-votd))))
+
+
+(provide 'init)
+;;; init.el ends here
+```
 
 
 <!-- CONTRIBUTING -->
@@ -87,7 +156,8 @@ Distributed under the Unlicensed License. See
 ## Acknowledgements
 
 * [All Glory to GOD](https://www.biblegateway.com/passage/?search=John%203%3A16&version=KJV)
-* [BibleGateway Ministry](https://www.biblegateway.com/) 
+* [BibleGateway Ministry](https://www.biblegateway.com/)
+* [Emacs Dashboard](https://github.com/emacs-dashboard/emacs-dashboard)
 * [gptel: A simple LLM client for Emacs](https://github.com/karthink/gptel)
 * [GitHub Copilot](https://github.com/copilot)
 
