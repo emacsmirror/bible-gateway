@@ -12,15 +12,15 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <h3 align="center">Verse of the Day</h3>
+  <h3 align="center">Bible Verse of the Day in Emacs</h3>
 
   <p align="center">
-    votd: A simple Emacs package that fetches the verse of the day from BibleGateway
+    <b>votd</b>: A simple Emacs package that fetches the <b>v</b>erse <b>o</b>f <b>t</b>he <b>d</b>ay from BibleGateway
     <br />
   </p>
 </p>
 
-#+html: <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dark.png?raw=true">
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/dark.png?raw=true">
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
