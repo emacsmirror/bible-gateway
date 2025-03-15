@@ -107,6 +107,24 @@ Here is a minimal `init.el` to add the verse of the day to your emacs-dashboard 
 ;;; init.el ends here
 ```
 
+To also use the verse of the day as a `*scratch*` message, change the `use-package` configuration as follows:
+
+``` commonlisp
+(use-package votd
+  :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
+  :after dashboard
+  :config
+  (let ((verse (get-votd)))
+    (setq dashboard-footer-messages (list verse))
+    (setq initial-scratch-message
+	        (concat ";;; *scratch* ;;;\n\n"
+		              (string-join
+		               (mapcar (lambda (line) (concat ";;; " line))
+			                     (split-string verse "\n"))
+		               "\n")
+		               "\n;;;\n"))))
+```
+
 And that's it! God bless you! Have a great day! :-)
 
 
