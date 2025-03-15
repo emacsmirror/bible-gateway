@@ -47,8 +47,7 @@ from the [BibleGateway](https://www.biblegateway.com/).
 What it basically does is retrieve the content from the [BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
 API in JSON format and then format the text and reference accordingly.  
 
-I'm currently using it to display the verse of the day as a footer in the Emacs
-[dashboard](https://github.com/emacs-dashboard/emacs-dashboard), but
+I'm currently using it to display the verse of the day as a footer in the Emacs [dashboard](https://github.com/emacs-dashboard/emacs-dashboard), but
 one can use it as a message in the `*scratch*` buffer, etc.
 
 <!-- INSTALLATION -->
@@ -74,7 +73,23 @@ new `:vc` keyword of `use-package` as follows:
 <!-- CONFIGURATION -->
 ## Configuration
 
-Here is a minimal `init.el` to add the verse of the day to your emacs-dashboard footer:
+If you would like to use the verse of the day as your `*scratch message*`, use the following configuration in your `init.el`:
+
+``` commonlisp
+(use-package votd
+  :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
+  :config
+  (setq initial-scratch-message
+	(concat ";;; *scratch* ;;;\n\n"
+		(string-join
+		 (mapcar (lambda (line) (concat ";;; " line))
+			 (split-string (get-votd) "\n"))
+		 "\n")
+		"\n;;;\n")))
+```
+By setting `(setq inhibit-splash-screen t)`, the `*scratch*` buffer will be displayed immediately upon starting Emacs, allowing you to see the verse of the day right away.
+
+Additionally, here is a minimal `init.el` to add the verse of the day to your `emacs-dashboard` footer:
 
 ``` commonlisp
 ;;; init.el --- minimal init.el for emacs-dashboard & votd -*- lexical-binding: t -*-
@@ -107,7 +122,7 @@ Here is a minimal `init.el` to add the verse of the day to your emacs-dashboard 
 ;;; init.el ends here
 ```
 
-To also use the verse of the day as a `*scratch*` message, change the `use-package` configuration as follows:
+To use the verse of the day both as a `*scratch*` message and as a footer in the `emacs-dashboard`, change the `use-package` configuration as follows:
 
 ``` commonlisp
 (use-package votd
