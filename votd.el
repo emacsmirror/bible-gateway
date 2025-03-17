@@ -14,8 +14,13 @@
   :group 'external)
 
 (defcustom votd-bible-version "KJV"
-  "The version of the Bible to get from"
+  "The Bible version, default KJV."
   :type 'string
+  :group 'votd)
+
+(defcustom votd-text-width 80
+  "The width the votd body in number of characters."
+  :type 'integer
   :group 'votd)
 
 (defun split-with-spaces (str)
@@ -62,7 +67,7 @@
   "Format verse TEXT as a justified paragraph with optional WIDTH."
   (when text  ; Only process if text is not nil
     (with-temp-buffer
-      (let* ((fill-column (or width 70))
+      (let* ((fill-column (or width votd-text-width))
              (lines '()))
         ;; First fill the paragraph normally
         (insert text)
@@ -93,6 +98,7 @@
       (setq decoded (replace-regexp-in-string "&ldquo;" "\"" decoded))
       (setq decoded (replace-regexp-in-string "&rdquo;" "\"" decoded))
       (setq decoded (replace-regexp-in-string "&#8212;" "--" decoded))
+      (setq decoded (replace-regexp-in-string "&#8217;" "'" decoded))
       decoded)))
 
 (defun fetch-daily-bible-verse ()
@@ -113,7 +119,7 @@
                (clean-verse (replace-regexp-in-string "[\"]" "" verse-text))
                (formatted-verse (format-verse-text clean-verse))
                (verse-reference (gethash "display_ref" votd))
-               (fill-width 70))
+               (fill-width votd-text-width))
           (format "%s\n%s" 
                   formatted-verse 
                   (let ((ref-text verse-reference))
