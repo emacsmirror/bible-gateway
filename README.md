@@ -83,12 +83,12 @@ If you would like to use the verse of the day as your `*scratch message*`, use t
   :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
   :config
   (setq initial-scratch-message
-	    (concat ";;; *scratch* ;;;\n\n"
-		        (string-join
-		        (mapcar (lambda (line) (concat ";;; " line))
-			            (split-string (get-votd) "\n"))
-		         "\n")
-		        "\n;;;\n")))
+	(concat ";;; *scratch* ;;;\n\n"
+		(string-join
+		 (mapcar (lambda (line) (concat ";;; " line))
+			 (split-string (get-votd) "\n"))
+		 "\n")
+		"\n;;;\n")))
 ```
 By setting `(setq inhibit-splash-screen t)`, the `*scratch*` buffer will be displayed immediately upon starting Emacs, allowing you to see the verse of the day right away.
 
@@ -135,12 +135,22 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
   (let ((verse (get-votd)))
     (setq dashboard-footer-messages (list verse))
     (setq initial-scratch-message
-		  (concat ";;; *scratch* ;;;\n\n"
-		          (string-join
-		           (mapcar (lambda (line) (concat ";;; " line))
-			               (split-string verse "\n"))
-	               "\n")
-		          "\n;;;\n"))))
+	  (concat ";;; *scratch* ;;;\n\n"
+		  (string-join
+		   (mapcar (lambda (line) (concat ";;; " line))
+                           (split-string verse "\n"))
+		    "\n")
+                   "\n;;;\n"))))
+```
+
+If you're using `doom-dashboard`, the following snippet from a Reddit comment should do the trick.
+
+``` commonlisp
+(use-package votd
+  :config
+  (defun doom-dashboard-widget-votd ()
+    (insert "\n" (+doom-dashboard--center +doom-dashboard--width (get-votd))))
+  (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-votd))
 ```
 
 And that's it! God bless you! Have a great day! :-)
