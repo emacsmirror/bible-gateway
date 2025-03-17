@@ -20,9 +20,11 @@
   </p>
 </p>
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/dark.png?raw=true">
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-dark.png?raw=true">
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/light.png?raw=true">
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-light.png?raw=true">
+
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/scratch-dark.png?raw=true">
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
@@ -47,8 +49,9 @@ from the [BibleGateway](https://www.biblegateway.com/).
 What it basically does is retrieve the content from the [BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
 API in JSON format and then format the text and reference accordingly.  
 
-I'm currently using it to display the verse of the day as a footer in the Emacs [dashboard](https://github.com/emacs-dashboard/emacs-dashboard), but
-one can use it as a message in the `*scratch*` buffer, etc.
+I'm currently using it to display the verse of the day as a footer in
+the Emacs [dashboard](https://github.com/emacs-dashboard/emacs-dashboard), as
+well as in the `*scratch*` buffer message.
 
 <!-- INSTALLATION -->
 ## Installation
@@ -80,12 +83,12 @@ If you would like to use the verse of the day as your `*scratch message*`, use t
   :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
   :config
   (setq initial-scratch-message
-	(concat ";;; *scratch* ;;;\n\n"
-		(string-join
-		 (mapcar (lambda (line) (concat ";;; " line))
-			 (split-string (get-votd) "\n"))
-		 "\n")
-		"\n;;;\n")))
+	    (concat ";;; *scratch* ;;;\n\n"
+		        (string-join
+		        (mapcar (lambda (line) (concat ";;; " line))
+			            (split-string (get-votd) "\n"))
+		         "\n")
+		        "\n;;;\n")))
 ```
 By setting `(setq inhibit-splash-screen t)`, the `*scratch*` buffer will be displayed immediately upon starting Emacs, allowing you to see the verse of the day right away.
 
@@ -132,12 +135,12 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
   (let ((verse (get-votd)))
     (setq dashboard-footer-messages (list verse))
     (setq initial-scratch-message
-	        (concat ";;; *scratch* ;;;\n\n"
-		              (string-join
-		               (mapcar (lambda (line) (concat ";;; " line))
-			                     (split-string verse "\n"))
-		               "\n")
-		               "\n;;;\n"))))
+		  (concat ";;; *scratch* ;;;\n\n"
+		          (string-join
+		           (mapcar (lambda (line) (concat ";;; " line))
+			               (split-string verse "\n"))
+	               "\n")
+		          "\n;;;\n"))))
 ```
 
 And that's it! God bless you! Have a great day! :-)
