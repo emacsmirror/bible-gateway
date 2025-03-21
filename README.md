@@ -140,7 +140,7 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
 		   (mapcar (lambda (line) (concat ";;; " line))
                            (split-string verse "\n"))
 		    "\n")
-                   "\n;;;\n"))))
+                   "\n\n"))))
 ```
 
 If you're using `doom-dashboard`, the following snippet from a Reddit comment should do the trick.

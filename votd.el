@@ -10,7 +10,7 @@
 (require 'json)
 
 (defgroup votd nil
-  "Package that fetches the Bible verse of the day from the BibleGateway"
+  "Package that fetches the Bible verse of the day from BibleGateway."
   :group 'external)
 
 (defcustom votd-bible-version "KJV"
@@ -94,11 +94,15 @@
 (defun decode-html-entities (text)
   "Decode HTML entities in TEXT."
   (when text
-    (let ((decoded text))
-      (setq decoded (replace-regexp-in-string "&ldquo;" "\"" decoded))
-      (setq decoded (replace-regexp-in-string "&rdquo;" "\"" decoded))
-      (setq decoded (replace-regexp-in-string "&#8212;" "--" decoded))
-      (setq decoded (replace-regexp-in-string "&#8217;" "'" decoded))
+    (let ((entity-map '(("&ldquo;" . "\"")
+                        ("&rdquo;" . "\"")
+                        ("&#8212;" . "--")
+                        ("&#8217;" . "'")
+                        ("&#8220;" . "\"")
+                        ("&#8221;" . "\"")))
+          (decoded text))
+      (dolist (entity entity-map)
+        (setq decoded (replace-regexp-in-string (car entity) (cdr entity) decoded)))
       decoded)))
 
 (defun fetch-daily-bible-verse ()
@@ -127,7 +131,7 @@
                             ref-text))))))))
 
 (defun get-votd ()
-  "Get the daily verse for the dashboard footer with error handling."
+  "Get the daily verse and handle errors."
   (condition-case err
       (fetch-daily-bible-verse)
     (error
