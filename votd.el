@@ -59,7 +59,7 @@ but have everlasting life."
   :type 'string
   :group 'votd)
 
-(defcustom votd-request-timeout 1
+(defcustom votd-request-timeout 10
   "The timeout for the URL request in seconds."
   :type 'integer
   :group 'votd)
