@@ -64,22 +64,6 @@ but have everlasting life."
   :type 'integer
   :group 'votd)
 
-(defun votd-split-with-spaces (str)
-  "Split STR preserving original spacing between words."
-  (let ((parts nil)
-        (start 0)
-        (len (length str)))
-    (while (< start len)
-      (if (string-match "\\([^ ]+\\)\\( *\\)" str start)
-          (progn
-            (push (match-string 1 str) parts)
-            (push (match-string 2 str) parts)
-            (setq start (match-end 0)))
-        (setq start len)))
-    (nreverse (if (string-match-p " $" str)
-                  parts
-                (butlast parts)))))
-
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
   (let* ((words (split-string line))
@@ -126,7 +110,7 @@ but have everlasting life."
         (let* ((justified-lines
                 (append
                  (mapcar (lambda (line)
-                           (justify-line line fill-column))
+                           (votd-justify-line line fill-column))
                          (butlast lines))
                  (last lines)))
                (result (string-join justified-lines "\n")))
@@ -162,9 +146,9 @@ but have everlasting life."
                    (json-data (json-read-from-string json-string))
                    (votd (gethash "votd" json-data))
                    (raw-text (gethash "text" votd))
-                   (verse-text (decode-html-entities raw-text))
+                   (verse-text (votd-decode-html-entities raw-text))
                    (clean-verse (replace-regexp-in-string "[\"]" "" verse-text))
-                   (formatted-verse (format-verse-text clean-verse))
+                   (formatted-verse (votd-format-verse-text clean-verse))
                    (verse-reference (gethash "display_ref" votd))
                    (fill-width votd-text-width))
               (format "%s\n%s" 
@@ -174,7 +158,7 @@ but have everlasting life."
                                 ref-text))))))
       (error
        (format "%s\n%s"
-               (format-verse-text votd-fallback-verse)
+               (votd-format-verse-text votd-fallback-verse)
                (let ((ref-text votd-fallback-reference))
                  (concat (make-string (- votd-text-width (length ref-text)) ?\s)
                          ref-text)))))))
@@ -182,7 +166,7 @@ but have everlasting life."
 (defun votd-get-verse ()
   "Get the daily verse and handle errors."
   (condition-case err
-      (fetch-daily-bible-verse)
+      (votd-fetch-daily-bible-verse)
     (error
      (format "Today's verse could not be fetched: %s" (error-message-string err)))))
 
