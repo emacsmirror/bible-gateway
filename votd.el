@@ -1,9 +1,9 @@
-;;; votd.el --- Bible Verse Of The Day in Emacs -*- lexical-binding: t -*-
+;;; votd.el --- Bible Verse Of The Day -*- lexical-binding: t -*-
 
 ;; Copyright (C) 2025 Kristjon Ciko
 
 ;; Author: Kristjon Ciko <kristjoc@uio.no>
-;; Keywords: bible verse
+;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
 ;; Package-Version: 0.5
@@ -23,9 +23,9 @@
 
 ;;; Commentary:
 
-;; votd is a simple Emacs package that fetches the Bible verse of the
+;; votd is a simple package that fetches the Bible verse of the
 ;; day from https://www.biblegateway.com/ and formats it to be used as
-;; an emacs-dashboard footer or *scratch* buffer message in Emacs.
+;; an emacs-dashboard footer or *scratch* buffer message.
 
 ;;; Code:
 
@@ -64,7 +64,7 @@ but have everlasting life."
   :type 'integer
   :group 'votd)
 
-(defun split-with-spaces (str)
+(defun votd-split-with-spaces (str)
   "Split STR preserving original spacing between words."
   (let ((parts nil)
         (start 0)
@@ -80,7 +80,7 @@ but have everlasting life."
                   parts
                 (butlast parts)))))
 
-(defun justify-line (line width)
+(defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
   (let* ((words (split-string line))
          (word-count (length words)))
@@ -104,7 +104,7 @@ but have everlasting life."
                          ?\s))))
         (concat result (car (last words)))))))
 
-(defun format-verse-text (text &optional width)
+(defun votd-format-verse-text (text &optional width)
   "Format verse TEXT as a justified paragraph with optional WIDTH."
   (when text  ; Only process if text is not nil
     (with-temp-buffer
@@ -132,7 +132,7 @@ but have everlasting life."
                (result (string-join justified-lines "\n")))
           result)))))
 
-(defun decode-html-entities (text)
+(defun votd-decode-html-entities (text)
   "Decode HTML entities in TEXT."
   (when text
     (let ((entity-map '(("&ldquo;" . "\"")
@@ -146,7 +146,7 @@ but have everlasting life."
         (setq decoded (replace-regexp-in-string (car entity) (cdr entity) decoded)))
       decoded)))
 
-(defun fetch-daily-bible-verse ()
+(defun votd-fetch-daily-bible-verse ()
   "Fetch the daily Bible verse from BibleGateway API."
   (let ((url-request-method "GET")
         (url-queue-timeout votd-request-timeout)
@@ -179,7 +179,7 @@ but have everlasting life."
                  (concat (make-string (- votd-text-width (length ref-text)) ?\s)
                          ref-text)))))))
 
-(defun get-votd ()
+(defun votd-get-verse ()
   "Get the daily verse and handle errors."
   (condition-case err
       (fetch-daily-bible-verse)

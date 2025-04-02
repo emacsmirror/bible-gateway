@@ -86,7 +86,7 @@ If you would like to use the verse of the day as your `*scratch message*`, use t
 	(concat ";;; *scratch* ;;;\n\n"
 		(string-join
 		 (mapcar (lambda (line) (concat ";;; " line))
-			 (split-string (get-votd) "\n"))
+			 (split-string (votd-get-verse) "\n"))
 		 "\n")
 		"\n;;;\n")))
 ```
@@ -119,7 +119,7 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
   :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
   :after dashboard
   :config
-  (setq dashboard-footer-messages (list (get-votd)))) ; votd as emacs-dashboard footer
+  (setq dashboard-footer-messages (list (votd-get-verse)))) ; votd as emacs-dashboard footer
 
 (provide 'init)
 ;;; init.el ends here
@@ -132,7 +132,7 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
   :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
   :after dashboard
   :config
-  (let ((verse (get-votd)))
+  (let ((verse (votd-get-verse)))
     (setq dashboard-footer-messages (list verse))
     (setq initial-scratch-message
 	  (concat ";;; *scratch* ;;;\n\n"
@@ -149,7 +149,7 @@ If you're using `doom-dashboard`, the following snippet from a Reddit comment sh
 (use-package votd
   :config
   (defun doom-dashboard-widget-votd ()
-    (insert "\n" (+doom-dashboard--center +doom-dashboard--width (get-votd))))
+    (insert "\n" (+doom-dashboard--center +doom-dashboard--width (votd-get-verse))))
   (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-votd))
 ```
 
