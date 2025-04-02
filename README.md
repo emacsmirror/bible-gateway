@@ -172,7 +172,7 @@ to learn and create. Any contributions you make are **appreciated**.
 <!-- LICENSE -->
 ## License
 
-Distributed under the Unlicensed License. See
+Distributed under the GPL-3.0 license. See
 [`LICENSE`](https://github.com/kristjoc/votd/blob/main/LICENSE) for more information.
 
 
