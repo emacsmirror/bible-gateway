@@ -163,6 +163,7 @@ but have everlasting life."
                  (concat (make-string (- votd-text-width (length ref-text)) ?\s)
                          ref-text)))))))
 
+;;;###autoload
 (defun votd-get-verse ()
   "Get the daily verse and handle errors."
   (condition-case err
