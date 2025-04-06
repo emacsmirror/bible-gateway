@@ -59,7 +59,7 @@ but have everlasting life."
   :type 'string
   :group 'votd)
 
-(defcustom votd-request-timeout 10
+(defcustom votd-request-timeout 3
   "The timeout for the URL request in seconds."
   :type 'integer
   :group 'votd)
@@ -101,7 +101,7 @@ but have everlasting life."
         (goto-char (point-min))
         (while (not (eobp))
           (let ((line (string-trim (buffer-substring (line-beginning-position)
-                                                   (line-end-position)))))
+                                                     (line-end-position)))))
             (unless (string-empty-p line)
               (push line lines)))
           (forward-line 1))
@@ -133,10 +133,9 @@ but have everlasting life."
 (defun votd-fetch-daily-bible-verse ()
   "Fetch the daily Bible verse from BibleGateway API."
   (let ((url-request-method "GET")
-        (url-queue-timeout votd-request-timeout)
         (url (concat "https://www.biblegateway.com/votd/get/?format=json&version=" votd-bible-version)))
     (condition-case nil
-        (with-current-buffer (url-retrieve-synchronously url t t)
+        (with-current-buffer (url-retrieve-synchronously url t t votd-request-timeout)
           (goto-char (point-min))
           (when (search-forward "\n\n" nil t)
             (let* ((json-string (buffer-substring-no-properties (point) (point-max)))
@@ -151,17 +150,17 @@ but have everlasting life."
                    (formatted-verse (votd-format-verse-text clean-verse))
                    (verse-reference (gethash "display_ref" votd))
                    (fill-width votd-text-width))
-              (format "%s\n%s" 
-                      formatted-verse 
+              (format "%s\n%s"
+                      formatted-verse
                       (let ((ref-text verse-reference))
                         (concat (make-string (- fill-width (length ref-text)) ?\s)
                                 ref-text))))))
       (error
-       (format "%s\n%s"
-               (votd-format-verse-text votd-fallback-verse)
-               (let ((ref-text votd-fallback-reference))
-                 (concat (make-string (- votd-text-width (length ref-text)) ?\s)
-                         ref-text)))))))
+       (message "%s\n%s"
+                (votd-format-verse-text votd-fallback-verse)
+                (let ((ref-text votd-fallback-reference))
+                  (concat (make-string (- votd-text-width (length ref-text)) ?\s)
+                          ref-text)))))))
 
 ;;;###autoload
 (defun votd-get-verse ()
@@ -169,7 +168,7 @@ but have everlasting life."
   (condition-case err
       (votd-fetch-daily-bible-verse)
     (error
-     (format "Today's verse could not be fetched: %s" (error-message-string err)))))
+     (message "Today's verse could not be fetched: %s" (error-message-string err)))))
 
 (provide 'votd)
 ;;; votd.el ends here
