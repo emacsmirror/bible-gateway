@@ -2,7 +2,7 @@
 
 ;; Copyright (C) 2025 Kristjon Ciko
 
-;; Author: Kristjon Ciko <kristjoc@uio.no>
+;; Author: Kristjon Ciko
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))

@@ -12,7 +12,7 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <h3 align="center">Bible Verse of the Day in Emacs</h3>
+  <h3 align="center">Bible Verse of The Day in Emacs</h3>
 
   <p align="center">
     <b>votd</b>: A simple Emacs package that fetches the <b>v</b>erse <b>o</b>f <b>t</b>he <b>d</b>ay from BibleGateway
@@ -56,9 +56,27 @@ well as in the `*scratch*` buffer message.
 <!-- INSTALLATION -->
 ## Installation
 
-votd is not yet in a package archive. For Emacs 29, you can use
-`package-vc-install`. Switch to the `*scratch*` buffer and `yank` the
-following line:
+### From MELPA (Recommended)
+
+Starting from April 2025, [`votd`](https://melpa.org/#/votd) is available on MELPA. To install it using the package manager:
+
+1. Ensure MELPA is added to your `package-archives` (if not already):
+   ```commonlisp
+   (require 'package)
+   (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
+   ```
+
+2. Refresh the package list and install `votd`:
+   ```commonlisp
+   M-x package-refresh-contents RET
+   M-x package-install RET votd RET
+   ```
+
+### From GitHub
+
+To fetch the package directly from source you can use
+`package-vc-install`, available in Emacs >= 29. Switch to the
+`*scratch*` buffer and `yank` the following line:
 
 ``` commonlisp
 (package-vc-install '(votd :vc-backend Git :url  "https://github.com/kristjoc/votd"))
@@ -72,6 +90,9 @@ new `:vc` keyword of `use-package` as follows:
   :vc (:url "https://github.com/kristjoc/votd")) ; For Emacs>=30
 ```
 
+Alternatively, clone the repository from GitHub and install `votd.el` with `M-x package-install-file`.
+
+
 
 <!-- CONFIGURATION -->
 ## Configuration
@@ -80,7 +101,6 @@ If you would like to use the verse of the day as your `*scratch message*`, use t
 
 ``` commonlisp
 (use-package votd
-  :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
   :config
   (setq initial-scratch-message
 	(concat ";;; *scratch* ;;;\n\n"
@@ -114,9 +134,9 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
   :config 
   (setq dashboard-center-content t))
 
-;; install votd with use-package using :vc
+;; install votd from MELPA
 (use-package votd
-  :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
+  :ensure t
   :after dashboard
   :config
   (setq dashboard-footer-messages (list (votd-get-verse)))) ; votd as emacs-dashboard footer
@@ -129,7 +149,7 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
 
 ``` commonlisp
 (use-package votd
-  :vc (:url "https://github.com/kristjoc/votd") ; For Emacs>=30
+  :ensure t
   :after dashboard
   :config
   (let ((verse (votd-get-verse)))
