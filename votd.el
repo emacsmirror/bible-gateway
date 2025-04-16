@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.5
+;; Package-Version: 0.6
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
   :group 'votd)
 
 (defcustom votd-text-width 80
-  "The width the votd body in number of characters."
+  "The width the votd body in number of characters, default 80."
   :type 'integer
   :group 'votd)
 
@@ -63,6 +63,12 @@ but have everlasting life."
   "The timeout for the URL request in seconds."
   :type 'integer
   :group 'votd)
+
+(defcustom votd-include-ref t
+  "If non-nil, include the reference (e.g., 'John 3 (KJV)') in the output."
+  :type 'boolean
+  :group 'votd)
+
 
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
@@ -124,11 +130,16 @@ but have everlasting life."
                         ("&#8212;" . "--")
                         ("&#8217;" . "'")
                         ("&#8220;" . "\"")
-                        ("&#8221;" . "\"")))
-          (decoded text))
-      (dolist (entity entity-map)
-        (setq decoded (replace-regexp-in-string (car entity) (cdr entity) decoded)))
-      decoded)))
+                        ("&#8221;" . "\"")
+                        ("&quot;" . "\"")
+                        ("&apos;" . "'")
+                        ("&lt;" . "<")
+                        ("&gt;" . ">")
+                        ("&nbsp;" . " ")
+                        ("&amp;" . "&") ; Decode &amp; first
+                        ("&#039;" . "'")))) ; Decode numeric entities like &#039; after &amp;
+      (dolist (entity entity-map text)
+        (setq text (replace-regexp-in-string (car entity) (cdr entity) text))))))
 
 (defun votd-fetch-daily-bible-verse ()
   "Fetch the daily Bible verse from BibleGateway API."
@@ -169,6 +180,44 @@ but have everlasting life."
       (votd-fetch-daily-bible-verse)
     (error
      (message "Today's verse could not be fetched: %s" (error-message-string err)))))
+
+;;;###autoload
+(defun votd-get-passage ()
+  "Prompt the user for a passage, construct the URL, fetch its content, insert it at the cursor, and format using `fill-paragraph'."
+  (interactive)
+  (let* ((passage (read-string "Enter the passage (e.g., John 3:16, John 3, John 3-4): "))
+         (formatted-passage (replace-regexp-in-string " " "" passage)) ;; Remove spaces
+         (url (concat "https://www.biblegateway.com/passage/?search=" formatted-passage "&version=" votd-bible-version)))
+    (condition-case error
+        (let ((original-buffer (current-buffer))) ; Save the current buffer
+          (with-current-buffer (url-retrieve-synchronously url t t votd-request-timeout)
+            (goto-char (point-min))
+            ;; Extract the description from <meta property="og:description">
+            (if (search-forward "<meta property=\"og:description\" content=\"" nil t)
+                (let* ((start (point))
+                       (end (search-forward "\""))
+                       (description (buffer-substring-no-properties start (1- end)))
+                       (decoded-description (votd-decode-html-entities description)) ; Decode HTML entities
+                       (title nil)) ; Initialize title
+                  ;; Optionally extract the title if votd-include-ref is true
+                  (when votd-include-ref
+                    (goto-char (point-min))
+                    (when (search-forward "<meta name=\"twitter:title\" content=\"" nil t)
+                      (let ((start (point))
+                            (end (search-forward "\"")))
+                        (setq title (buffer-substring-no-properties start (1- end))))))
+                  ;; Insert into the original buffer
+                  (with-current-buffer original-buffer
+                    (let ((start-insertion (point))) ; Save the starting point of insertion
+                      (insert (if votd-include-ref
+                                  (format "%s\n\n%s" (or title "") decoded-description) ; Include title
+                                decoded-description)) ; Exclude title
+                      (fill-paragraph)
+                      ;; Move the cursor to the end of the inserted text
+                      (goto-char (point-max)))))
+	      (message "Could not find the passage description."))))
+      (error
+       (message "Error while fetching the passage: %s" (error-message-string error))))))
 
 (provide 'votd)
 ;;; votd.el ends here
