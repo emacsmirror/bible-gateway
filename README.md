@@ -42,7 +42,7 @@
   <ul>
   <li><a href="#introduction">Introduction</a></li>
   <li><a href="#installation">Installation</a></li>
-  <li><a href="#configuration">Configuration</a></li>
+  <li><a href="#configuration">Configuration & Usage</a></li>
   <li><a href="#contributing">Contributing</a></li>
   <li><a href="#license">License</a></li>
   <li><a href="#contact">Contact</a></li>
@@ -55,9 +55,12 @@
 ## Introduction
 
 votd is a simple Emacs package that fetches the Bible verse of the day
-from the [BibleGateway](https://www.biblegateway.com/).
-What it basically does is retrieve the content from the [BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
-API in JSON format and then format the text and reference accordingly.  
+from the [BibleGateway](https://www.biblegateway.com/). What it
+basically does is retrieve the content from the
+[BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
+API in JSON format and then format the text and reference accordingly.
+It can also insert any requested Bible verse, passage, or chapter at the
+current point in the buffer.  
 
 I'm currently using it to display the verse of the day as a footer in
 the Emacs [dashboard](https://github.com/emacs-dashboard/emacs-dashboard), as
@@ -105,9 +108,12 @@ Alternatively, clone the repository from GitHub and install `votd.el` with `M-x 
 
 
 <!-- CONFIGURATION -->
-## Configuration
+## Configuration & Usage
 
-If you would like to use the verse of the day as your `*scratch message*`, use the following configuration in your `init.el`:
+### `*scratch* buffer message`
+
+If you would like to use the verse of the day as your `*scratch*`
+buffer message*`, use the following configuration in your `init.el`:
 
 ``` commonlisp
 (use-package votd
@@ -121,6 +127,8 @@ If you would like to use the verse of the day as your `*scratch message*`, use t
 		"\n;;;\n")))
 ```
 By setting `(setq inhibit-splash-screen t)`, the `*scratch*` buffer will be displayed immediately upon starting Emacs, allowing you to see the verse of the day right away.
+
+### `emacs-dashboard` footer
 
 Additionally, here is a minimal `init.el` to add the verse of the day to your `emacs-dashboard` footer:
 
@@ -155,6 +163,8 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
 ;;; init.el ends here
 ```
 
+### `emacs-dashboard` footer + `*scratch* buffer message`
+
 To use the verse of the day both as a `*scratch*` message and as a footer in the `emacs-dashboard`, change the `use-package` configuration as follows:
 
 ``` commonlisp
@@ -173,6 +183,8 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
                    "\n\n"))))
 ```
 
+### `doom-dashboard`
+
 If you're using `doom-dashboard`, the following snippet from a Reddit comment should do the trick.
 
 ``` commonlisp
@@ -182,6 +194,13 @@ If you're using `doom-dashboard`, the following snippet from a Reddit comment sh
     (insert "\n" (+doom-dashboard--center +doom-dashboard--width (votd-get-verse))))
   (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-votd))
 ```
+
+### Insert passage at point
+
+To insert a Bible passage in the current buffer, at point, invoke the
+`votd-get-passage`, enter the reference, e.g., John 3:16, or John
+3:15-15, or John 3, and hit `RET`. Set the user option `votd-include-ref` to `t` to include the reference, or to `nil` to exclude it.
+
 
 And that's it! God bless you! Have a great day! :-)
 
