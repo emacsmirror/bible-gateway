@@ -26,7 +26,7 @@
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/scratch-dark.png?raw=true">
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-get-passage.mp4?raw=true">
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-get-passage.gif?raw=true">
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
