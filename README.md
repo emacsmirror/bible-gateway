@@ -26,6 +26,8 @@
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/scratch-dark.png?raw=true">
 
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-get-passage.mp4?raw=true">
+
 <!-- TABLE OF CONTENTS -->
 <details open="open">
   <summary><h2 style="display: inline-block">Table of Contents</h2></summary>
