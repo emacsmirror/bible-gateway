@@ -42,7 +42,7 @@
   <ul>
   <li><a href="#introduction">Introduction</a></li>
   <li><a href="#installation">Installation</a></li>
-  <li><a href="#configuration">Configuration & Usage</a></li>
+  <li><a href="#configuration--usage">Configuration & Usage</a></li>
   <li><a href="#contributing">Contributing</a></li>
   <li><a href="#license">License</a></li>
   <li><a href="#contact">Contact</a></li>
@@ -110,7 +110,7 @@ Alternatively, clone the repository from GitHub and install `votd.el` with `M-x 
 <!-- CONFIGURATION -->
 ## Configuration & Usage
 
-### `*scratch* buffer message`
+### `*scratch*` buffer message
 
 If you would like to use the verse of the day as your `*scratch*`
 buffer message*`, use the following configuration in your `init.el`:
@@ -163,7 +163,7 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
 ;;; init.el ends here
 ```
 
-### `emacs-dashboard` footer + `*scratch* buffer message`
+### `emacs-dashboard` footer + `*scratch*` buffer message
 
 To use the verse of the day both as a `*scratch*` message and as a footer in the `emacs-dashboard`, change the `use-package` configuration as follows:
 
@@ -197,8 +197,8 @@ If you're using `doom-dashboard`, the following snippet from a Reddit comment sh
 
 ### Insert passage at point
 
-To insert a Bible passage in the current buffer, at point, invoke the
-`votd-get-passage`, enter the reference, e.g., John 3:16, or John
+To insert a Bible passage in the current buffer, at point, invoke `M-x
+votd-get-passage`, enter the reference, e.g., John 3:16, or John
 3:15-15, or John 3, and hit `RET`. Set the user option `votd-include-ref` to `t` to include the reference, or to `nil` to exclude it.
 
 
