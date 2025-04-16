@@ -15,16 +15,24 @@
   <h3 align="center">Bible Verse of The Day in Emacs</h3>
 
   <p align="center">
-    <b>votd</b>: A simple Emacs package that fetches the <b>v</b>erse <b>o</b>f <b>t</b>he <b>d</b>ay from BibleGateway
+    <b>votd</b>: A simple Emacs package that fetches the <b>v</b>erse
+    <b>o</b>f <b>t</b>he <b>d</b>ay and any requested verse, passage,
+    or chapter from [BibleGateway](https://www.biblegateway.com/).
     <br />
   </p>
 </p>
+
+### Using as an emacs-dashboard footer
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-dark.png?raw=true">
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-light.png?raw=true">
 
+### Using as a `*scratch*` buffer message
+
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/scratch-dark.png?raw=true">
+
+### Inserting the Bible passage at point
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-get-passage.gif?raw=true">
 
