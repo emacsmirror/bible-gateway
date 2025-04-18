@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.6
+;; Package-Version: 0.7
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,9 +23,14 @@
 
 ;;; Commentary:
 
-;; votd is a simple package that fetches the Bible verse of the
-;; day from https://www.biblegateway.com/ and formats it to be used as
-;; an emacs-dashboard footer or *scratch* buffer message.
+;; votd is a simple package that fetches the Bible verse of the day
+;; from https://www.biblegateway.com/ and formats it to be used as an
+;; emacs-dashboard footer or *scratch* buffer message. It can also
+;; insert any requested Bible verse, passage, or chapter(s) at the
+;; current point in the buffer.
+;;
+;; (votd-get-verse) fetches the verse of the day from https://www.biblegateway.com/
+;; (votd-get-passage) fetches the requested passage and inserts it at point.
 
 ;;; Code:
 
@@ -65,7 +70,7 @@ but have everlasting life."
   :group 'votd)
 
 (defcustom votd-include-ref t
-  "If non-nil, include the reference (e.g., 'John 3 (KJV)') in the output."
+  "If non-nil, include the reference (e.g., 'John 3 (KJV)') when printing the passage."
   :type 'boolean
   :group 'votd)
 
@@ -183,41 +188,53 @@ but have everlasting life."
 
 ;;;###autoload
 (defun votd-get-passage ()
-  "Prompt the user for a passage, construct the URL, fetch its content, insert it at the cursor, and format using `fill-paragraph'."
+  "Fetch a Bible passage and insert it in the current buffer at point."
   (interactive)
-  (let* ((passage (read-string "Enter the passage (e.g., John 3:16, John 3, John 3-4): "))
-         (formatted-passage (replace-regexp-in-string " " "" passage)) ;; Remove spaces
+  (let* ((passage (read-string "Enter the passage (e.g., Matthew 28:19-20, Mark 1, Luke 3-4, or John 3:16-17): "))
+         (formatted-passage (replace-regexp-in-string " " "" passage))
          (url (concat "https://www.biblegateway.com/passage/?search=" formatted-passage "&version=" votd-bible-version)))
-    (condition-case error
-        (let ((original-buffer (current-buffer))) ; Save the current buffer
+    (condition-case err
+        (let ((original-buffer (current-buffer)))
           (with-current-buffer (url-retrieve-synchronously url t t votd-request-timeout)
             (goto-char (point-min))
-            ;; Extract the description from <meta property="og:description">
-            (if (search-forward "<meta property=\"og:description\" content=\"" nil t)
-                (let* ((start (point))
-                       (end (search-forward "\""))
-                       (description (buffer-substring-no-properties start (1- end)))
-                       (decoded-description (votd-decode-html-entities description)) ; Decode HTML entities
-                       (title nil)) ; Initialize title
-                  ;; Optionally extract the title if votd-include-ref is true
-                  (when votd-include-ref
-                    (goto-char (point-min))
-                    (when (search-forward "<meta name=\"twitter:title\" content=\"" nil t)
-                      (let ((start (point))
-                            (end (search-forward "\"")))
-                        (setq title (buffer-substring-no-properties start (1- end))))))
-                  ;; Insert into the original buffer
-                  (with-current-buffer original-buffer
-                    (let ((start-insertion (point))) ; Save the starting point of insertion
-                      (insert (if votd-include-ref
-                                  (format "%s\n\n%s" (or title "") decoded-description) ; Include title
-                                decoded-description)) ; Exclude title
-                      (fill-paragraph)
-                      ;; Move the cursor to the end of the inserted text
-                      (goto-char (point-max)))))
-	      (message "Could not find the passage description."))))
-      (error
-       (message "Error while fetching the passage: %s" (error-message-string error))))))
+            ;; First get the title if needed
+            (let ((title nil))
+              (when votd-include-ref
+                (goto-char (point-min))
+                (when (search-forward "<meta name=\"twitter:title\" content=\"" nil t)
+                  (let ((start (point))
+                        (end (search-forward "\"")))
+                    (setq title (buffer-substring-no-properties start (1- end))))))
+              ;; Then get the verses
+              (goto-char (point-min))
+              (if (search-forward "<div class='passage-content passage-class-0'>" nil t)
+                  (let* ((start (point))
+                         (end (search-forward "</div>"))
+                         (raw-content (buffer-substring-no-properties start (1- end)))
+                         (verses '())
+                         (pos 0))
+
+                    ;; First, remove all chapter and verse number tags completely
+                    (setq raw-content
+                          (replace-regexp-in-string "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
+                    (setq raw-content
+                          (replace-regexp-in-string "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
+
+                    ;; Extract clean verses
+                    (while (string-match "class=\"text [^\"]*-\\([0-9]+\\)\">\\([^<]*\\)" raw-content pos)
+                      (let ((verse-num (match-string 1 raw-content))
+                            (verse-text (string-trim (match-string 2 raw-content))))
+                        (push (format "%s. %s" verse-num verse-text) verses))
+                      (setq pos (match-end 0)))
+
+                    ;; Insert title (if included) and verses
+                    (with-current-buffer original-buffer
+                      (when (and votd-include-ref title)
+                        (insert title "\n\n"))
+                      (insert (string-join (reverse verses) "\n"))))
+		(message "Sorry, we didn’t find any results for your search. Please double-check the book title and ensure the chapter and verse numbers are valid.")))))
+      ('error
+       (message "Error while fetching the passage: %s" (error-message-string err))))))
 
 (provide 'votd)
 ;;; votd.el ends here

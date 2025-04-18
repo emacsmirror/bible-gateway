@@ -17,22 +17,22 @@
   <p align="center">
     <b>votd</b>: A simple Emacs package that fetches the <b>v</b>erse
     <b>o</b>f <b>t</b>he <b>d</b>ay and any requested verse, passage,
-    or chapter from [BibleGateway](https://www.biblegateway.com/).
+    or chapter from https://BibleGateway.com
     <br />
   </p>
 </p>
 
-### Using as an emacs-dashboard footer
+#### Usage as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-dark.png?raw=true">
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-light.png?raw=true">
 
-### Using as a `*scratch*` buffer message
+#### Usage as a `*scratch*` buffer message
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/scratch-dark.png?raw=true">
 
-### Inserting the Bible passage at point
+#### Usage for inserting a Bible passage at point
 
 <img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-get-passage.gif?raw=true">
 
@@ -106,14 +106,13 @@ new `:vc` keyword of `use-package` as follows:
 Alternatively, clone the repository from GitHub and install `votd.el` with `M-x package-install-file`.
 
 
-
 <!-- CONFIGURATION -->
 ## Configuration & Usage
 
 ### `*scratch*` buffer message
 
 If you would like to use the verse of the day as your `*scratch*`
-buffer message*`, use the following configuration in your `init.el`:
+buffer message, use the following configuration in your `init.el`:
 
 ``` commonlisp
 (use-package votd
@@ -195,11 +194,13 @@ If you're using `doom-dashboard`, the following snippet from a Reddit comment sh
   (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-votd))
 ```
 
-### Insert passage at point
+### Insert a Bible passage at point
 
 To insert a Bible passage in the current buffer, at point, invoke `M-x
 votd-get-passage`, enter the reference, e.g., John 3:16, or John
-3:15-15, or John 3, and hit `RET`. Set the user option `votd-include-ref` to `t` to include the reference, or to `nil` to exclude it.
+3:15-15, or John 3, and hit `RET`. Set the user option
+`votd-include-ref` to `t` to include the reference, or to `nil` to
+exclude it.
 
 
 And that's it! God bless you! Have a great day! :-)
