@@ -74,6 +74,18 @@ but have everlasting life."
   :type 'boolean
   :group 'votd)
 
+(defconst votd-bible-books
+  '("Genesis" "Exodus" "Leviticus" "Numbers" "Deuteronomy" "Joshua" "Judges" "Ruth"
+    "1 Samuel" "2 Samuel" "1 Kings" "2 Kings" "1 Chronicles" "2 Chronicles"
+    "Ezra" "Nehemiah" "Esther" "Job" "Psalms" "Proverbs" "Ecclesiastes"
+    "Song of Solomon" "Isaiah" "Jeremiah" "Lamentations" "Ezekiel" "Daniel"
+    "Hosea" "Joel" "Amos" "Obadiah" "Jonah" "Micah" "Nahum" "Habakkuk"
+    "Zephaniah" "Haggai" "Zechariah" "Malachi"
+    "Matthew" "Mark" "Luke" "John" "Acts" "Romans" "1 Corinthians" "2 Corinthians"
+    "Galatians" "Ephesians" "Philippians" "Colossians" "1 Thessalonians"
+    "2 Thessalonians" "1 Timothy" "2 Timothy" "Titus" "Philemon" "Hebrews"
+    "James" "1 Peter" "2 Peter" "1 John" "2 John" "3 John" "Jude" "Revelation")
+  "List of Bible books in order.")
 
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
@@ -186,17 +198,54 @@ but have everlasting life."
     (error
      (message "Today's verse could not be fetched: %s" (error-message-string err)))))
 
+
+(defun votd-read-book ()
+  "Read a Bible book name with completion."
+  (completing-read "Book: " votd-bible-books nil t))
+
+(defun votd-read-chapter-verse (book)
+  "Read chapter and verse for BOOK."
+  (let ((input (read-string
+                (format "Select passage from: %s " book))))
+    (format "%s %s" book input)))
+
+(defun votd-process-verse-text (text)
+  "Process verse TEXT, handling special cases like small-caps LORD."
+  (let ((processed-text text))
+    ;; Replace small-caps span with "LORD"
+    (setq processed-text
+          (replace-regexp-in-string
+           "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>"
+           "LORD"
+           processed-text t))
+    ;; Remove "Read full chapter" text
+    (setq processed-text
+          (replace-regexp-in-string "Read full chapter.*$" "" processed-text))
+    ;; Remove trailing span IDs and div tags
+    (setq processed-text
+          (replace-regexp-in-string "\\(<span id=\"[^\"]*\".*\\|</div.*\\)$" "" processed-text))
+    ;; Remove any remaining HTML tags
+    (setq processed-text
+          (replace-regexp-in-string "<[^>]+>" "" processed-text))
+    ;; Fix non-breaking space
+    (setq processed-text
+          (replace-regexp-in-string "\\\\302\\\\240" " " processed-text))
+    ;; Trim whitespace and return
+    (string-trim processed-text)))
+
 ;;;###autoload
 (defun votd-get-passage ()
-  "Fetch a Bible passage and insert it in the current buffer at point."
+  "Fetch a Bible passage with book name completion."
   (interactive)
-  (let* ((passage (read-string "Enter the passage (e.g., Matthew 28:19-20, Mark 1, Luke 3-4, or John 3:16-17): "))
+  (let* ((book (votd-read-book))
+         (passage (votd-read-chapter-verse book))
          (formatted-passage (replace-regexp-in-string " " "" passage))
          (url (concat "https://www.biblegateway.com/passage/?search=" formatted-passage "&version=" votd-bible-version)))
     (condition-case err
         (let ((original-buffer (current-buffer)))
           (with-current-buffer (url-retrieve-synchronously url t t votd-request-timeout)
             (goto-char (point-min))
+
             ;; First get the title if needed
             (let ((title nil))
               (when votd-include-ref
@@ -205,6 +254,7 @@ but have everlasting life."
                   (let ((start (point))
                         (end (search-forward "\"")))
                     (setq title (buffer-substring-no-properties start (1- end))))))
+
               ;; Then get the verses
               (goto-char (point-min))
               (if (search-forward "<div class='passage-content passage-class-0'>" nil t)
@@ -214,27 +264,39 @@ but have everlasting life."
                          (verses '())
                          (pos 0))
 
-                    ;; First, remove all chapter and verse number tags completely
+                    ;; First, remove chapter numbers
                     (setq raw-content
                           (replace-regexp-in-string "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
+
+                    ;; Remove verse numbers but keep content
                     (setq raw-content
                           (replace-regexp-in-string "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
 
-                    ;; Extract clean verses
-                    (while (string-match "class=\"text [^\"]*-\\([0-9]+\\)\">\\([^<]*\\)" raw-content pos)
-                      (let ((verse-num (match-string 1 raw-content))
-                            (verse-text (string-trim (match-string 2 raw-content))))
-                        (push (format "%s. %s" verse-num verse-text) verses))
-                      (setq pos (match-end 0)))
+                    ;; Break the content into individual verse spans for processing
+                    (with-temp-buffer
+                      (insert raw-content)
+                      (goto-char (point-min))
+                      (while (re-search-forward "class=\"text [^\"]*-\\([0-9]+\\)\">" nil t)
+                        (let* ((verse-num (match-string 1))
+                               (verse-start (match-end 0))
+                               (verse-end (save-excursion
+                                            (if (re-search-forward "class=\"text" nil t)
+						(match-beginning 0)
+                                              (point-max))))
+                               (verse-content (buffer-substring-no-properties verse-start verse-end))
+                               (verse-text (votd-process-verse-text verse-content)))
+                          (when (not (string-empty-p verse-text))
+                            (push (format "%s. %s" verse-num verse-text) verses)))))
 
-                    ;; Insert title (if included) and verses
+                    ;; Insert title and verses
                     (with-current-buffer original-buffer
                       (when (and votd-include-ref title)
                         (insert title "\n\n"))
                       (insert (string-join (reverse verses) "\n"))))
-		(message "Sorry, we didn’t find any results for your search. Please double-check the book title and ensure the chapter and verse numbers are valid.")))))
+		(message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
       ('error
        (message "Error while fetching the passage: %s" (error-message-string err))))))
+
 
 (provide 'votd)
 ;;; votd.el ends here
