@@ -197,8 +197,11 @@ If you're using `doom-dashboard`, the following snippet from a Reddit comment sh
 ### Insert a Bible passage at point
 
 To insert a Bible passage in the current buffer, at point, invoke `M-x
-votd-get-passage`, enter the reference, e.g., John 3:16, or John
-3:15-15, or John 3, and hit `RET`. Set the user option
+votd-get-passage`, start typing the Bible book and autocomplete with
+`TAB`. Hit `RET` once the book is selected and enter the desired passage. It
+is possible to request a single verse (John 3:16), a verse range (John
+3:16-17), a single chapter (John 3), and a chapter range (John 3-4).
+Hit `RET` in the end to view the content. Set the user option
 `votd-include-ref` to `t` to include the reference, or to `nil` to
 exclude it.
 
