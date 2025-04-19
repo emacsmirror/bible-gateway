@@ -74,7 +74,7 @@ but have everlasting life."
   :type 'boolean
   :group 'votd)
 
-(defconst votd-bible-books
+(defconst votd-bible-books-kjv
   '("Genesis" "Exodus" "Leviticus" "Numbers" "Deuteronomy" "Joshua" "Judges" "Ruth"
     "1 Samuel" "2 Samuel" "1 Kings" "2 Kings" "1 Chronicles" "2 Chronicles"
     "Ezra" "Nehemiah" "Esther" "Job" "Psalms" "Proverbs" "Ecclesiastes"
@@ -86,6 +86,19 @@ but have everlasting life."
     "2 Thessalonians" "1 Timothy" "2 Timothy" "Titus" "Philemon" "Hebrews"
     "James" "1 Peter" "2 Peter" "1 John" "2 John" "3 John" "Jude" "Revelation")
   "List of Bible books in order.")
+
+(defconst votd-bible-books-lsg
+  '("Genèse" "Exode" "Lévitique" "Nombres" "Deutéronome" "Josué" "Juges" "Ruth"
+    "1 Samuel" "2 Samuel" "1 Rois" "2 Rois" "1 Chroniques" "2 Chroniques"
+    "Esdras" "Néhémie" "Esther" "Job" "Psaumes" "Proverbes" "Ecclésiaste"
+    "Cantique des Cantiques" "Ésaïe" "Jérémie" "Lamentations" "Ézéchiel" "Daniel"
+    "Osée" "Joël" "Amos" "Abdias" "Jonas" "Michée" "Nahum" "Habacuc"
+    "Sophonie" "Aggée" "Zacharie" "Malachie"
+    "Matthieu" "Marc" "Luc" "Jean" "Actes" "Romains" "1 Corinthiens" "2 Corinthiens"
+    "Galates" "Éphésiens" "Philippiens" "Colossiens" "1 Thessaloniciens"
+    "2 Thessaloniciens" "1 Timothée" "2 Timothée" "Tite" "Philémon" "Hébreux"
+    "Jacques" "1 Pierre" "2 Pierre" "1 Jean" "2 Jean" "3 Jean" "Jude" "Apocalypse")
+  "List of Bible books in order for the Louis Segond (LSG) version.")
 
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
@@ -140,7 +153,7 @@ but have everlasting life."
           result)))))
 
 (defun votd-decode-html-entities (text)
-  "Decode HTML entities in TEXT."
+  "Decode HTML entities in TEXT, including numeric character references."
   (when text
     (let ((entity-map '(("&ldquo;" . "\"")
                         ("&rdquo;" . "\"")
@@ -155,8 +168,17 @@ but have everlasting life."
                         ("&nbsp;" . " ")
                         ("&amp;" . "&") ; Decode &amp; first
                         ("&#039;" . "'")))) ; Decode numeric entities like &#039; after &amp;
+      ;; Replace named entities
       (dolist (entity entity-map text)
-        (setq text (replace-regexp-in-string (car entity) (cdr entity) text))))))
+        (setq text (replace-regexp-in-string (car entity) (cdr entity) text)))
+      ;; Replace numeric character references (e.g., &#233; -> é)
+      ;; Fix for LSG version in French
+      (setq text (replace-regexp-in-string "&#\\([0-9]+\\);" 
+                                           (lambda (match)
+                                             (char-to-string (string-to-number (match-string 1 match))))
+                                           text))
+      ;; Return the decoded text
+      text)))
 
 (defun votd-fetch-daily-bible-verse ()
   "Fetch the daily Bible verse from BibleGateway API."
@@ -198,10 +220,18 @@ but have everlasting life."
     (error
      (message "Today's verse could not be fetched: %s" (error-message-string err)))))
 
+;; Below is the section for votd-get-passage
 
 (defun votd-read-book ()
-  "Read a Bible book name with completion."
-  (completing-read "Book: " votd-bible-books nil t))
+  "Read a Bible book name with completion based on selected Bible version."
+  (completing-read
+   "Book: "
+   (cond ((string= votd-bible-version "LSG")
+          votd-bible-books-lsg)
+         ((string= votd-bible-version "KJV")
+          votd-bible-books-kjv)
+         (t votd-bible-books-kjv)) ; default to English names for unknown versions
+   nil t))
 
 (defun votd-read-chapter-verse (book)
   "Read chapter and verse for BOOK."
@@ -210,26 +240,40 @@ but have everlasting life."
     (format "%s %s" book input)))
 
 (defun votd-process-verse-text (text)
-  "Process verse TEXT, handling special cases like small-caps LORD."
+  "Process verse TEXT, handling special cases like small-caps LORD and UTF-8 encoding."
   (let ((processed-text text))
+    ;; First decode UTF-8 octal sequences
+    (setq processed-text
+          (decode-coding-string
+           (string-as-unibyte processed-text)
+           'utf-8))
+
     ;; Replace small-caps span with "LORD"
     (setq processed-text
           (replace-regexp-in-string
            "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>"
            "LORD"
            processed-text t))
+
     ;; Remove "Read full chapter" text
     (setq processed-text
           (replace-regexp-in-string "Read full chapter.*$" "" processed-text))
+
     ;; Remove trailing span IDs and div tags
     (setq processed-text
           (replace-regexp-in-string "\\(<span id=\"[^\"]*\".*\\|</div.*\\)$" "" processed-text))
+
     ;; Remove any remaining HTML tags
     (setq processed-text
           (replace-regexp-in-string "<[^>]+>" "" processed-text))
+
     ;; Fix non-breaking space
     (setq processed-text
           (replace-regexp-in-string "\\\\302\\\\240" " " processed-text))
+
+    ;; Decode HTML entities (if any remain)
+    (setq processed-text (votd-decode-html-entities processed-text))
+
     ;; Trim whitespace and return
     (string-trim processed-text)))
 
@@ -246,14 +290,18 @@ but have everlasting life."
           (with-current-buffer (url-retrieve-synchronously url t t votd-request-timeout)
             (goto-char (point-min))
 
-            ;; First get the title if needed
-            (let ((title nil))
-              (when votd-include-ref
-                (goto-char (point-min))
-                (when (search-forward "<meta name=\"twitter:title\" content=\"" nil t)
-                  (let ((start (point))
-                        (end (search-forward "\"")))
-                    (setq title (buffer-substring-no-properties start (1- end))))))
+	    ;; First get the title if required
+	    (let ((title nil))
+	      (when votd-include-ref
+		(goto-char (point-min))
+		(when (search-forward "<meta name=\"twitter:title\" content=\"" nil t)
+		  (let ((start (point))
+			(end (search-forward "\"")))
+		    ;; Decode the title here
+		    (setq title (decode-coding-string 
+				 (string-as-unibyte 
+				  (buffer-substring-no-properties start (1- end)))
+				 'utf-8)))))
 
               ;; Then get the verses
               (goto-char (point-min))
