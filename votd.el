@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.7
+;; Package-Version: 0.7.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
   :group 'external)
 
 (defcustom votd-bible-version "KJV"
-  "The Bible version, default KJV."
+  "The Bible version, default KJV. Other supported versions, which are available in the Public domain, are LSG in French and RVA in Spanish."
   :type 'string
   :group 'votd)
 
@@ -99,6 +99,19 @@ but have everlasting life."
     "2 Thessaloniciens" "1 Timothée" "2 Timothée" "Tite" "Philémon" "Hébreux"
     "Jacques" "1 Pierre" "2 Pierre" "1 Jean" "2 Jean" "3 Jean" "Jude" "Apocalypse")
   "List of Bible books in order for the Louis Segond (LSG) version.")
+
+(defconst votd-bible-books-rva
+  '("Génesis" "Éxodo" "Levítico" "Números" "Deuteronomio" "Josué" "Jueces" "Rut"
+    "1 Samuel" "2 Samuel" "1 Reyes" "2 Reyes" "1 Crónicas" "2 Crónicas"
+    "Esdras" "Nehemías" "Ester" "Job" "Salmos" "Proverbios" "Eclesiastés"
+    "Cantares" "Isaías" "Jeremías" "Lamentaciones" "Ezequiel" "Daniel"
+    "Oseas" "Joel" "Amós" "Abdías" "Jonás" "Miqueas" "Nahúm" "Habacuc"
+    "Sofonías" "Hageo" "Zacarías" "Malaquías"
+    "Mateo" "Marcos" "Lucas" "Juan" "Hechos" "Romanos" "1 Corintios" "2 Corintios"
+    "Gálatas" "Efesios" "Filipenses" "Colosenses" "1 Tesalonicenses"
+    "2 Tesalonicenses" "1 Timoteo" "2 Timoteo" "Tito" "Filemón" "Hebreos"
+    "Santiago" "1 Pedro" "2 Pedro" "1 Juan" "2 Juan" "3 Juan" "Judas" "Apocalipsis")
+  "List of Bible books in order for the Reina-Valera Antigua (RVA) version.")
 
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
@@ -172,11 +185,12 @@ but have everlasting life."
       (dolist (entity entity-map text)
         (setq text (replace-regexp-in-string (car entity) (cdr entity) text)))
       ;; Replace numeric character references (e.g., &#233; -> é)
-      ;; Fix for LSG version in French
-      (setq text (replace-regexp-in-string "&#\\([0-9]+\\);" 
-                                           (lambda (match)
-                                             (char-to-string (string-to-number (match-string 1 match))))
-                                           text))
+      ;; Fix for special characters in LSG and RVA
+      (setq text
+	    (replace-regexp-in-string "&#\\([0-9]+\\);"
+                                      (lambda (match)
+                                        (char-to-string (string-to-number (match-string 1 match))))
+                                      text))
       ;; Return the decoded text
       text)))
 
@@ -230,7 +244,9 @@ but have everlasting life."
           votd-bible-books-lsg)
          ((string= votd-bible-version "KJV")
           votd-bible-books-kjv)
-         (t votd-bible-books-kjv)) ; default to English names for unknown versions
+	 ((string= votd-bible-version "RVA")
+          votd-bible-books-rva)
+         (t votd-bible-books-kjv)) ; default to KJV for unknown versions
    nil t))
 
 (defun votd-read-chapter-verse (book)
@@ -277,6 +293,15 @@ but have everlasting life."
     ;; Trim whitespace and return
     (string-trim processed-text)))
 
+(defun votd-wrap-verse-text (verse-text)
+  "Wrap VERSE-TEXT according to window width with 4 spaces for wrapped lines."
+  (with-temp-buffer
+    (insert verse-text)
+    (let ((fill-prefix "    ")  ; 4 spaces for wrapped lines
+          (fill-column (- (window-width) 5))) ; window width minus some margin
+      (fill-region (point-min) (point-max))
+      (buffer-string))))
+
 ;;;###autoload
 (defun votd-get-passage ()
   "Fetch a Bible passage with book name completion."
@@ -284,7 +309,8 @@ but have everlasting life."
   (let* ((book (votd-read-book))
          (passage (votd-read-chapter-verse book))
          (formatted-passage (replace-regexp-in-string " " "" passage))
-         (url (concat "https://www.biblegateway.com/passage/?search=" formatted-passage "&version=" votd-bible-version)))
+         (url (concat "https://www.biblegateway.com/passage/?search="
+		      formatted-passage "&version=" votd-bible-version)))
     (condition-case err
         (let ((original-buffer (current-buffer)))
           (with-current-buffer (url-retrieve-synchronously url t t votd-request-timeout)
@@ -298,8 +324,8 @@ but have everlasting life."
 		  (let ((start (point))
 			(end (search-forward "\"")))
 		    ;; Decode the title here
-		    (setq title (decode-coding-string 
-				 (string-as-unibyte 
+		    (setq title (decode-coding-string
+				 (string-as-unibyte
 				  (buffer-substring-no-properties start (1- end)))
 				 'utf-8)))))
 
@@ -314,11 +340,13 @@ but have everlasting life."
 
                     ;; First, remove chapter numbers
                     (setq raw-content
-                          (replace-regexp-in-string "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
+                          (replace-regexp-in-string
+			   "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
 
                     ;; Remove verse numbers but keep content
                     (setq raw-content
-                          (replace-regexp-in-string "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
+                          (replace-regexp-in-string
+			   "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
 
                     ;; Break the content into individual verse spans for processing
                     (with-temp-buffer
@@ -331,17 +359,24 @@ but have everlasting life."
                                             (if (re-search-forward "class=\"text" nil t)
 						(match-beginning 0)
                                               (point-max))))
-                               (verse-content (buffer-substring-no-properties verse-start verse-end))
-                               (verse-text (votd-process-verse-text verse-content)))
-                          (when (not (string-empty-p verse-text))
-                            (push (format "%s. %s" verse-num verse-text) verses)))))
+                               (verse-content
+				(buffer-substring-no-properties verse-start verse-end))
+			       ;; First process the verse text normally
+                               (verse-text (votd-process-verse-text verse-content))
+			       ;; Then wrap it with proper formatting
+			       (final-text (votd-wrap-verse-text verse-text)))
+                          (when (not (string-empty-p final-text))
+			    (push (format "%s.%s%s" verse-num
+					  (if (< (string-to-number verse-num) 10) "  " " ")
+					  final-text)
+				  verses)))))
 
                     ;; Insert title and verses
                     (with-current-buffer original-buffer
                       (when (and votd-include-ref title)
-                        (insert title "\n\n"))
+			(insert title "\n\n"))
                       (insert (string-join (reverse verses) "\n"))))
-		(message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
+	        (message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
       ('error
        (message "Error while fetching the passage: %s" (error-message-string err))))))
 
