@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.7.5
+;; Package-Version: 0.7.6
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -42,7 +42,7 @@
   :group 'external)
 
 (defcustom votd-bible-version "KJV"
-  "The Bible version, default KJV. Other supported versions, which are available in the Public domain, are LSG in French and RVA in Spanish."
+  "The Bible version, default KJV. Other supported versions, which are available in the Public domain, are LSG in French, RVA in Spanish, and ALB in Albanian."
   :type 'string
   :group 'votd)
 
@@ -112,6 +112,18 @@ but have everlasting life."
     "2 Tesalonicenses" "1 Timoteo" "2 Timoteo" "Tito" "Filemón" "Hebreos"
     "Santiago" "1 Pedro" "2 Pedro" "1 Juan" "2 Juan" "3 Juan" "Judas" "Apocalipsis")
   "List of Bible books in order for the Reina-Valera Antigua (RVA) version.")
+
+(defvar votd-bible-books-alb
+  '("Zanafilla" "Eksodi" "Levitiku" "Numrat" "Ligji i Përtërirë" "Jozueu" "Gjyqtarët" "Ruthi"
+    "1 i Samuelit" "2 i Samuelit" "1 i Mbretërve" "2 i Mbretërve" "1 i Kronikave" "2 i Kronikave"
+    "Esdra" "Nehemia" "Ester" "Jobi" "Psalmet" "Fjalët e urta" "Predikuesi" "Kantiku i Kantikëve"
+    "Isaia" "Jeremia" "Vajtimet" "Ezekieli" "Danieli" "Osea" "Joeli" "Amosi" "Abdia" "Jona" "Mikea"
+    "Nahumi" "Habakuku" "Sofonia" "Hagai" "Zakaria" "Malakia" "Mateu" "Marku" "Luka" "Gjoni"
+    "Veprat e Apostujve" "Romakëve" "1 e Korintasve" "2 e Korintasve" "Galatasve" "Efesianëve"
+    "Filipianëve" "Kolosianëve"    "1 Thesalonikasve" "2 Thesalonikasve" "1 Timoteut" "2 Timoteut"
+    "Titi" "Filemonit" "Hebrenjve" "Jakobit" "1 Pjetrit" "2 Pjetrit" "1 Gjonit" "2 Gjonit"
+    "3 Gjonit" "Juda" "Zbulesa")
+  "List of Bible books in Albanian (ALB).")
 
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
@@ -246,6 +258,8 @@ but have everlasting life."
           votd-bible-books-kjv)
 	 ((string= votd-bible-version "RVA")
           votd-bible-books-rva)
+	 ((string= votd-bible-version "ALB")
+          votd-bible-books-alb)
          (t votd-bible-books-kjv)) ; default to KJV for unknown versions
    nil t))
 
@@ -308,7 +322,7 @@ but have everlasting life."
   (interactive)
   (let* ((book (votd-read-book))
          (passage (votd-read-chapter-verse book))
-         (formatted-passage (replace-regexp-in-string " " "" passage))
+	 (formatted-passage (replace-regexp-in-string " " "" passage))
          (url (concat "https://www.biblegateway.com/passage/?search="
 		      formatted-passage "&version=" votd-bible-version)))
     (condition-case err
@@ -379,7 +393,6 @@ but have everlasting life."
 	        (message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
       ('error
        (message "Error while fetching the passage: %s" (error-message-string err))))))
-
 
 (provide 'votd)
 ;;; votd.el ends here
