@@ -41,8 +41,12 @@
   "Package that fetches the Bible verse of the day from BibleGateway."
   :group 'external)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                           Customizable variables                           ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defcustom votd-bible-version "KJV"
-  "The Bible version, default KJV. Other supported versions, which are available in the Public domain, are LSG in French, RVA in Spanish, and ALB in Albanian."
+  "The Bible version, default KJV. Other supported versions, which are available in the Public domain, are LSG in French, RVA in Spanish, ALB in Albanian, and UKR in Ukrainian."
   :type 'string
   :group 'votd)
 
@@ -74,56 +78,113 @@ but have everlasting life."
   :type 'boolean
   :group 'votd)
 
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                     Bible books in supported languages                     ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defconst votd-bible-books-kjv
-  '("Genesis" "Exodus" "Leviticus" "Numbers" "Deuteronomy" "Joshua" "Judges" "Ruth"
-    "1 Samuel" "2 Samuel" "1 Kings" "2 Kings" "1 Chronicles" "2 Chronicles"
-    "Ezra" "Nehemiah" "Esther" "Job" "Psalms" "Proverbs" "Ecclesiastes"
-    "Song of Solomon" "Isaiah" "Jeremiah" "Lamentations" "Ezekiel" "Daniel"
-    "Hosea" "Joel" "Amos" "Obadiah" "Jonah" "Micah" "Nahum" "Habakkuk"
-    "Zephaniah" "Haggai" "Zechariah" "Malachi"
-    "Matthew" "Mark" "Luke" "John" "Acts" "Romans" "1 Corinthians" "2 Corinthians"
-    "Galatians" "Ephesians" "Philippians" "Colossians" "1 Thessalonians"
-    "2 Thessalonians" "1 Timothy" "2 Timothy" "Titus" "Philemon" "Hebrews"
-    "James" "1 Peter" "2 Peter" "1 John" "2 John" "3 John" "Jude" "Revelation")
-  "List of Bible books in order.")
+  '(("Genesis" . 50) ("Exodus" . 40) ("Leviticus" . 27) ("Numbers" . 36)
+    ("Deuteronomy" . 34) ("Joshua" . 24) ("Judges" . 21) ("Ruth" . 4)
+    ("1 Samuel" . 31) ("2 Samuel" . 24) ("1 Kings" . 22) ("2 Kings" . 25)
+    ("1 Chronicles" . 29) ("2 Chronicles" . 36) ("Ezra" . 10) ("Nehemiah" . 13)
+    ("Esther" . 10) ("Job" . 42) ("Psalms" . 150) ("Proverbs" . 31)
+    ("Ecclesiastes" . 12) ("Song of Solomon" . 8) ("Isaiah" . 66) ("Jeremiah" . 52)
+    ("Lamentations" . 5) ("Ezekiel" . 48) ("Daniel" . 12) ("Hosea" . 14)
+    ("Joel" . 3) ("Amos" . 9) ("Obadiah" . 1) ("Jonah" . 4) ("Micah" . 7)
+    ("Nahum" . 3) ("Habakkuk" . 3) ("Zephaniah" . 3) ("Haggai" . 2)
+    ("Zechariah" . 14) ("Malachi" . 4) ("Matthew" . 28) ("Mark" . 16)
+    ("Luke" . 24) ("John" . 21) ("Acts" . 28) ("Romans" . 16)
+    ("1 Corinthians" . 16) ("2 Corinthians" . 13) ("Galatians" . 6)
+    ("Ephesians" . 6) ("Philippians" . 4) ("Colossians" . 4)
+    ("1 Thessalonians" . 5) ("2 Thessalonians" . 3) ("1 Timothy" . 6)
+    ("2 Timothy" . 4) ("Titus" . 3) ("Philemon" . 1) ("Hebrews" . 13)
+    ("James" . 5) ("1 Peter" . 5) ("2 Peter" . 3) ("1 John" . 5)
+    ("2 John" . 1) ("3 John" . 1) ("Jude" . 1) ("Revelation" . 22))
+  "List of Bible books (KJV version) with their number of chapters.")
 
 (defconst votd-bible-books-lsg
-  '("Genèse" "Exode" "Lévitique" "Nombres" "Deutéronome" "Josué" "Juges" "Ruth"
-    "1 Samuel" "2 Samuel" "1 Rois" "2 Rois" "1 Chroniques" "2 Chroniques"
-    "Esdras" "Néhémie" "Esther" "Job" "Psaumes" "Proverbes" "Ecclésiaste"
-    "Cantique des Cantiques" "Ésaïe" "Jérémie" "Lamentations" "Ézéchiel" "Daniel"
-    "Osée" "Joël" "Amos" "Abdias" "Jonas" "Michée" "Nahum" "Habacuc"
-    "Sophonie" "Aggée" "Zacharie" "Malachie"
-    "Matthieu" "Marc" "Luc" "Jean" "Actes" "Romains" "1 Corinthiens" "2 Corinthiens"
-    "Galates" "Éphésiens" "Philippiens" "Colossiens" "1 Thessaloniciens"
-    "2 Thessaloniciens" "1 Timothée" "2 Timothée" "Tite" "Philémon" "Hébreux"
-    "Jacques" "1 Pierre" "2 Pierre" "1 Jean" "2 Jean" "3 Jean" "Jude" "Apocalypse")
-  "List of Bible books in order for the Louis Segond (LSG) version.")
+  '(("Genèse" . 50) ("Exode" . 40) ("Lévitique" . 27) ("Nombres" . 36)
+    ("Deutéronome" . 34) ("Josué" . 24) ("Juges" . 21) ("Ruth" . 4)
+    ("1 Samuel" . 31) ("2 Samuel" . 24) ("1 Rois" . 22) ("2 Rois" . 25)
+    ("1 Chroniques" . 29) ("2 Chroniques" . 36) ("Esdras" . 10) ("Néhémie" . 13)
+    ("Esther" . 10) ("Job" . 42) ("Psaumes" . 150) ("Proverbes" . 31)
+    ("Ecclésiaste" . 12) ("Cantique des Cantiques" . 8) ("Ésaïe" . 66) ("Jérémie" . 52)
+    ("Lamentations" . 5) ("Ézéchiel" . 48) ("Daniel" . 12) ("Osée" . 14)
+    ("Joël" . 3) ("Amos" . 9) ("Abdias" . 1) ("Jonas" . 4) ("Michée" . 7)
+    ("Nahum" . 3) ("Habacuc" . 3) ("Sophonie" . 3) ("Aggée" . 2)
+    ("Zacharie" . 14) ("Malachie" . 4) ("Matthieu" . 28) ("Marc" . 16)
+    ("Luc" . 24) ("Jean" . 21) ("Actes" . 28) ("Romains" . 16)
+    ("1 Corinthiens" . 16) ("2 Corinthiens" . 13) ("Galates" . 6)
+    ("Éphésiens" . 6) ("Philippiens" . 4) ("Colossiens" . 4)
+    ("1 Thessaloniciens" . 5) ("2 Thessaloniciens" . 3) ("1 Timothée" . 6)
+    ("2 Timothée" . 4) ("Tite" . 3) ("Philémon" . 1) ("Hébreux" . 13)
+    ("Jacques" . 5) ("1 Pierre" . 5) ("2 Pierre" . 3) ("1 Jean" . 5)
+    ("2 Jean" . 1) ("3 Jean" . 1) ("Jude" . 1) ("Apocalypse" . 22))
+  "List of Bible books (LSG version) with their number of chapters.")
 
 (defconst votd-bible-books-rva
-  '("Génesis" "Éxodo" "Levítico" "Números" "Deuteronomio" "Josué" "Jueces" "Rut"
-    "1 Samuel" "2 Samuel" "1 Reyes" "2 Reyes" "1 Crónicas" "2 Crónicas"
-    "Esdras" "Nehemías" "Ester" "Job" "Salmos" "Proverbios" "Eclesiastés"
-    "Cantares" "Isaías" "Jeremías" "Lamentaciones" "Ezequiel" "Daniel"
-    "Oseas" "Joel" "Amós" "Abdías" "Jonás" "Miqueas" "Nahúm" "Habacuc"
-    "Sofonías" "Hageo" "Zacarías" "Malaquías"
-    "Mateo" "Marcos" "Lucas" "Juan" "Hechos" "Romanos" "1 Corintios" "2 Corintios"
-    "Gálatas" "Efesios" "Filipenses" "Colosenses" "1 Tesalonicenses"
-    "2 Tesalonicenses" "1 Timoteo" "2 Timoteo" "Tito" "Filemón" "Hebreos"
-    "Santiago" "1 Pedro" "2 Pedro" "1 Juan" "2 Juan" "3 Juan" "Judas" "Apocalipsis")
-  "List of Bible books in order for the Reina-Valera Antigua (RVA) version.")
+  '(("Génesis" . 50) ("Éxodo" . 40) ("Levítico" . 27) ("Números" . 36)
+    ("Deuteronomio" . 34) ("Josué" . 24) ("Jueces" . 21) ("Rut" . 4)
+    ("1 Samuel" . 31) ("2 Samuel" . 24) ("1 Reyes" . 22) ("2 Reyes" . 25)
+    ("1 Crónicas" . 29) ("2 Crónicas" . 36) ("Esdras" . 10) ("Nehemías" . 13)
+    ("Ester" . 10) ("Job" . 42) ("Salmos" . 150) ("Proverbios" . 31)
+    ("Eclesiastés" . 12) ("Cantares" . 8) ("Isaías" . 66) ("Jeremías" . 52)
+    ("Lamentaciones" . 5) ("Ezequiel" . 48) ("Daniel" . 12) ("Oseas" . 14)
+    ("Joel" . 3) ("Amós" . 9) ("Abdías" . 1) ("Jonás" . 4) ("Miqueas" . 7)
+    ("Nahúm" . 3) ("Habacuc" . 3) ("Sofonías" . 3) ("Hageo" . 2)
+    ("Zacarías" . 14) ("Malaquías" . 4) ("Mateo" . 28) ("Marcos" . 16)
+    ("Lucas" . 24) ("Juan" . 21) ("Hechos" . 28) ("Romanos" . 16)
+    ("1 Corintios" . 16) ("2 Corintios" . 13) ("Gálatas" . 6)
+    ("Efesios" . 6) ("Filipenses" . 4) ("Colosenses" . 4)
+    ("1 Tesalonicenses" . 5) ("2 Tesalonicenses" . 3) ("1 Timoteo" . 6)
+    ("2 Timoteo" . 4) ("Tito" . 3) ("Filemón" . 1) ("Hebreos" . 13)
+    ("Santiago" . 5) ("1 Pedro" . 5) ("2 Pedro" . 3) ("1 Juan" . 5)
+    ("2 Juan" . 1) ("3 Juan" . 1) ("Judas" . 1) ("Apocalipsis" . 22))
+  "List of Bible books (RVA version) with their number of chapters.")
 
-(defvar votd-bible-books-alb
-  '("Zanafilla" "Eksodi" "Levitiku" "Numrat" "Ligji i Përtërirë" "Jozueu" "Gjyqtarët" "Ruthi"
-    "1 i Samuelit" "2 i Samuelit" "1 i Mbretërve" "2 i Mbretërve" "1 i Kronikave" "2 i Kronikave"
-    "Esdra" "Nehemia" "Ester" "Jobi" "Psalmet" "Fjalët e urta" "Predikuesi" "Kantiku i Kantikëve"
-    "Isaia" "Jeremia" "Vajtimet" "Ezekieli" "Danieli" "Osea" "Joeli" "Amosi" "Abdia" "Jona" "Mikea"
-    "Nahumi" "Habakuku" "Sofonia" "Hagai" "Zakaria" "Malakia" "Mateu" "Marku" "Luka" "Gjoni"
-    "Veprat e Apostujve" "Romakëve" "1 e Korintasve" "2 e Korintasve" "Galatasve" "Efesianëve"
-    "Filipianëve" "Kolosianëve"    "1 Thesalonikasve" "2 Thesalonikasve" "1 Timoteut" "2 Timoteut"
-    "Titi" "Filemonit" "Hebrenjve" "Jakobit" "1 Pjetrit" "2 Pjetrit" "1 Gjonit" "2 Gjonit"
-    "3 Gjonit" "Juda" "Zbulesa")
-  "List of Bible books in Albanian (ALB).")
+(defconst votd-bible-books-alb
+  '(("Zanafilla" . 50) ("Eksodi" . 40) ("Levitiku" . 27) ("Numrat" . 36)
+    ("Ligji i Përtërirë" . 34) ("Jozueu" . 24) ("Gjyqtarët" . 21) ("Ruthi" . 4)
+    ("1 i Samuelit" . 31) ("2 i Samuelit" . 24) ("1 i Mbretërve" . 22) ("2 i Mbretërve" . 25)
+    ("1 i Kronikave" . 29) ("2 i Kronikave" . 36) ("Esdra" . 10) ("Nehemia" . 13)
+    ("Ester" . 10) ("Jobi" . 42) ("Psalmet" . 150) ("Fjalët e urta" . 31)
+    ("Predikuesi" . 12) ("Kantiku i Kantikëve" . 8) ("Isaia" . 66) ("Jeremia" . 52)
+    ("Vajtimet" . 5) ("Ezekieli" . 48) ("Danieli" . 12) ("Osea" . 14)
+    ("Joeli" . 3) ("Amosi" . 9) ("Abdia" . 1) ("Jona" . 4) ("Mikea" . 7)
+    ("Nahumi" . 3) ("Habakuku" . 3) ("Sofonia" . 3) ("Hagai" . 2)
+    ("Zakaria" . 14) ("Malakia" . 4) ("Mateu" . 28) ("Marku" . 16)
+    ("Luka" . 24) ("Gjoni" . 21) ("Veprat e Apostujve" . 28) ("Romakëve" . 16)
+    ("1 e Korintasve" . 16) ("2 e Korintasve" . 13) ("Galatasve" . 6)
+    ("Efesianëve" . 6) ("Filipianëve" . 4) ("Kolosianëve" . 4)
+    ("1 Thesalonikasve" . 5) ("2 Thesalonikasve" . 3) ("1 Timoteut" . 6)
+    ("2 Timoteut" . 4) ("Titi" . 3) ("Filemonit" . 1) ("Hebrenjve" . 13)
+    ("Jakobit" . 5) ("1 Pjetrit" . 5) ("2 Pjetrit" . 3) ("1 Gjonit" . 5)
+    ("2 Gjonit" . 1) ("3 Gjonit" . 1) ("Juda" . 1) ("Zbulesa" . 22))
+  "List of Bible books (ALB version) with their number of chapters.")
+
+(defconst votd-bible-books-ukr
+  '(("Буття" . 50) ("Вихід" . 40) ("Левит" . 27) ("Числа" . 36)
+    ("Повторення Закону" . 34) ("Ісус Навин" . 24) ("Книга Суддів" . 21) ("Рут" . 4)
+    ("1 Самуїлова" . 31) ("2 Самуїлова" . 24) ("1 царів" . 22) ("2 царів" . 25)
+    ("1 хроніки" . 29) ("2 хроніки" . 36) ("Ездра" . 10) ("Неемія" . 13)
+    ("Естер" . 10) ("Йов" . 42) ("Псалми" . 150) ("Приповісті" . 31)
+    ("Екклезіяст" . 12) ("Пісня над піснями" . 8) ("Ісая" . 66) ("Єремія" . 52)
+    ("Плач Єремії" . 5) ("Єзекіїль" . 48) ("Даниїл" . 12) ("Осія" . 14)
+    ("Йоїл" . 3) ("Амос" . 9) ("Овдій" . 1) ("Йона" . 4) ("Михей" . 7)
+    ("Наум" . 3) ("Авакум" . 3) ("Софонія" . 3) ("Огій" . 2)
+    ("Захарія" . 14) ("Малахії" . 4) ("Від Матвія" . 28) ("Від Марка" . 16)
+    ("Від Луки" . 24) ("Від Івана" . 21) ("Дії" . 28) ("До римлян" . 16)
+    ("1 до коринтян" . 16) ("2 до коринтян" . 13) ("До галатів" . 6)
+    ("До ефесян" . 6) ("До филип'ян" . 4) ("До колоссян" . 4)
+    ("1 до солунян" . 5) ("2 до солунян" . 3) ("1 Тимофію" . 6)
+    ("2 Тимофію" . 4) ("До Тита" . 3) ("До Филимона" . 1) ("До євреїв" . 13)
+    ("Якова" . 5) ("1 Петра" . 5) ("2 Петра" . 3) ("1 Івана" . 5)
+    ("2 Івана" . 1) ("3 Івана" . 1) ("Юда" . 1) ("Об'явлення" . 22))
+  "List of Bible books (UKR version) with their number of chapters.")
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                     Package Section I: Fetch the Verse of The Day          ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun votd-justify-line (line width)
   "Justify LINE to WIDTH characters."
@@ -246,28 +307,62 @@ but have everlasting life."
     (error
      (message "Today's verse could not be fetched: %s" (error-message-string err)))))
 
-;; Below is the section for votd-get-passage
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                     Package section II - Fetch a Bible Passage             ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defun votd-read-book ()
   "Read a Bible book name with completion based on selected Bible version."
   (completing-read
-   "Book: "
-   (cond ((string= votd-bible-version "LSG")
-          votd-bible-books-lsg)
-         ((string= votd-bible-version "KJV")
-          votd-bible-books-kjv)
-	 ((string= votd-bible-version "RVA")
-          votd-bible-books-rva)
-	 ((string= votd-bible-version "ALB")
-          votd-bible-books-alb)
-         (t votd-bible-books-kjv)) ; default to KJV for unknown versions
+   "Select a Book: "
+   (mapcar #'car  ; Get just the book names for completion
+           (cond ((string= votd-bible-version "KJV")
+                  votd-bible-books-kjv)
+                 ((string= votd-bible-version "LSG")
+                  votd-bible-books-lsg)
+                 ((string= votd-bible-version "RVA")
+                  votd-bible-books-rva)
+		 ((string= votd-bible-version "ALB")
+		  votd-bible-books-alb)
+		 ((string= votd-bible-version "UKR")
+		  votd-bible-books-ukr)
+                 (t votd-bible-books-kjv)))
    nil t))
+
+(defun votd-get-chapter-count (book version)
+  "Get the number of chapters for BOOK in the given VERSION."
+  (let ((books-list (cond ((string= version "KJV")
+                           votd-bible-books-kjv)
+                          ((string= version "LSG")
+                           votd-bible-books-lsg)
+                          ((string= version "RVA")
+                           votd-bible-books-rva)
+			  ((string= version "ALB")
+                           votd-bible-books-alb)
+                          ((string= version "UKR")
+                           votd-bible-books-ukr)
+                          (t votd-bible-books-kjv))))
+    (cdr (assoc book books-list))))
 
 (defun votd-read-chapter-verse (book)
   "Read chapter and verse for BOOK."
-  (let ((input (read-string
-                (format "Select passage from: %s " book))))
-    (format "%s %s" book input)))
+  (let* ((books-list (cond ((string= votd-bible-version "KJV")
+                            votd-bible-books-kjv)
+                           ((string= votd-bible-version "LSG")
+                            votd-bible-books-lsg)
+                           ((string= votd-bible-version "RVA")
+                            votd-bible-books-rva)
+                           ((string= votd-bible-version "ALB")
+                            votd-bible-books-alb)
+                           ((string= votd-bible-version "UKR")
+                            votd-bible-books-ukr)
+                           (t votd-bible-books-kjv)))
+         (max-chapters (cdr (assoc book books-list))))
+    (unless max-chapters
+      (error "Could not find chapter count for book: %s in version %s" book votd-bible-version))
+    (let ((input (read-string
+                  (format "Select passage from %s (1-%d): " book max-chapters))))
+      (format "%s %s" book input))))
 
 (defun votd-process-verse-text (text)
   "Process verse TEXT, handling special cases like small-caps LORD and UTF-8 encoding."
