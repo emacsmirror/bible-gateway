@@ -46,6 +46,7 @@
   <li><a href="#contributing">Contributing</a></li>
   <li><a href="#license">License</a></li>
   <li><a href="#contact">Contact</a></li>
+  <li><a href="#support">Support</a></li>
   <li><a href="#acknowledgements">Acknowledgements</a></li>
   </ul>
 </details>
@@ -233,6 +234,12 @@ Distributed under the GPL-3.0 license. See
 ## Contact
 
 [Signal Me](https://signal.me/#eu/7axcnRBeqe3T1fJ3aDXFqFUOU68-DiBzkLbU3U5kogZ1UR7N5YlH665PzEOJSxdD)
+
+
+<!-- SUPPORT -->
+## Support
+
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L41DYXR5)
 
 
 <!-- ACKNOWLEDGEMENTS -->
