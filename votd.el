@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.7.6
+;; Package-Version: 0.8.0
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,14 +23,17 @@
 
 ;;; Commentary:
 
-;; votd is a simple package that fetches the Bible verse of the day
-;; from https://www.biblegateway.com/ and formats it to be used as an
-;; emacs-dashboard footer or *scratch* buffer message. It can also
-;; insert any requested Bible verse, passage, or chapter(s) at the
-;; current point in the buffer.
+;; `votd` is a simple package that 1) fetches the Verse of the Day
+;; from BibleGateway and formats it to be displayed as the Emacs
+;; dashboard footer or *scratch* buffer message, 2) allows users to
+;; insert any requested Bible verse or passage at the current point in
+;; the buffer, and 3) opens a browser tab to listen to the requested
+;; chapter.
 ;;
-;; (votd-get-verse) fetches the verse of the day from https://www.biblegateway.com/
-;; (votd-get-passage) fetches the requested passage and inserts it at point.
+;; Usage:
+;; (votd-get-verse) fetches the verse of the day from https://biblegateway.com/.
+;; (votd-get-passage) fetches a specified passage and inserts it at point.
+;; (votd-listen-passage) opens the audio URL for the requested passage.
 
 ;;; Code:
 
@@ -488,6 +491,68 @@ but have everlasting life."
 	        (message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
       ('error
        (message "Error while fetching the passage: %s" (error-message-string err))))))
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                    Package Section III - Get Audio link                    ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defconst votd-bible-books-osis
+  '(("Genesis" . "Gen") ("Exodus" . "Exod") ("Leviticus" . "Lev")
+    ("Numbers" . "Num") ("Deuteronomy" . "Deut") ("Joshua" . "Josh")
+    ("Judges" . "Judg") ("Ruth" . "Ruth") ("1 Samuel" . "1Sam")
+    ("2 Samuel" . "2Sam") ("1 Kings" . "1Kgs") ("2 Kings" . "2Kgs")
+    ("1 Chronicles" . "1Chr") ("2 Chronicles" . "2Chr") ("Ezra" . "Ezra")
+    ("Nehemiah" . "Neh") ("Esther" . "Esth") ("Job" . "Job")
+    ("Psalms" . "Ps") ("Proverbs" . "Prov") ("Ecclesiastes" . "Eccl")
+    ("Song of Solomon" . "Song") ("Isaiah" . "Isa") ("Jeremiah" . "Jer")
+    ("Lamentations" . "Lam") ("Ezekiel" . "Ezek") ("Daniel" . "Dan")
+    ("Hosea" . "Hos") ("Joel" . "Joel") ("Amos" . "Amos")
+    ("Obadiah" . "Obad") ("Jonah" . "Jonah") ("Micah" . "Mic")
+    ("Nahum" . "Nah") ("Habakkuk" . "Hab") ("Zephaniah" . "Zeph")
+    ("Haggai" . "Hag") ("Zechariah" . "Zech") ("Malachi" . "Mal")
+    ("Matthew" . "Matt") ("Mark" . "Mark") ("Luke" . "Luke")
+    ("John" . "John") ("Acts" . "Acts") ("Romans" . "Rom")
+    ("1 Corinthians" . "1Cor") ("2 Corinthians" . "2Cor")
+    ("Galatians" . "Gal") ("Ephesians" . "Eph") ("Philippians" . "Phil")
+    ("Colossians" . "Col") ("1 Thessalonians" . "1Thess")
+    ("2 Thessalonians" . "2Thess") ("1 Timothy" . "1Tim")
+    ("2 Timothy" . "2Tim") ("Titus" . "Titus") ("Philemon" . "Phlm")
+    ("Hebrews" . "Heb") ("James" . "Jas") ("1 Peter" . "1Pet")
+    ("2 Peter" . "2Pet") ("1 John" . "1John") ("2 John" . "2John")
+    ("3 John" . "3John") ("Jude" . "Jude") ("Revelation" . "Rev"))
+  "Mapping of Bible book names to their OSIS abbreviations for audio links.")
+
+(defun votd-get-audio-link (book chapter &optional verse)
+  "Generate and open BibleGateway audio link for BOOK CHAPTER and optional VERSE."
+  (interactive)
+  (let* ((osis-code (cdr (assoc book votd-bible-books-osis)))
+         (version (downcase votd-bible-version))
+         (base-url "https://www.biblegateway.com/audio/dramatized")
+         (url (if osis-code
+                  (format "%s/%s/%s.%d" base-url version osis-code chapter)
+		(error "Unknown book: %s" book))))
+    ;; Open URL in browser
+    (browse-url url)
+    ;; Return URL for display
+    url))
+
+;;;###autoload
+(defun votd-listen-passage ()
+  "Open a browser tab to listen the requested chapter."
+  (interactive)
+  (let* ((books-list (cond ((string= votd-bible-version "KJV")
+                            votd-bible-books-kjv)
+                           (t votd-bible-books-kjv)))
+         (book (completing-read "Select Book: " (mapcar #'car books-list)))
+         (max-chapters (cdr (assoc book books-list)))
+         (input (read-string
+                 (format "Select Chapter from %s (1-%d): " book max-chapters)))
+         (audio-link (votd-get-audio-link book (string-to-number input))))
+    ;; More detailed message with the specific chapter being opened
+    (message "Switch to your browser and click Play to listen %s %s (KJV)."
+             book input)
+    (format "%s %s\nListen online: %s" book input audio-link)))
+
 
 (provide 'votd)
 ;;; votd.el ends here
