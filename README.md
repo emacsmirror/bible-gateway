@@ -46,7 +46,7 @@
   <li><a href="#contributing">Contributing</a></li>
   <li><a href="#license">License</a></li>
   <li><a href="#contact">Contact</a></li>
-  <li><a href="#support">Support</a></li>
+  <!---<li><a href="#support">Support</a></li>-->
   <li><a href="#acknowledgements">Acknowledgements</a></li>
   </ul>
 </details>
@@ -207,6 +207,16 @@ Hit `RET` in the end to view the content. Set the user option
 exclude it.
 
 
+### Listen to the selected chapter in your Browser
+
+To open the audio link for the selected chapter in your browser from Emacs,
+invoke `M-x votd-listen-passage`, start typing the Bible book and autocomplete with
+`TAB`. Hit `RET` once the book is selected and enter the chapter number.
+After hitting `RET` again, switch to your browser and click Play to listen to the chapter.  
+Check out the demo below to see how it works:
+
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-listen-passage.gif?raw=true">
+
 And that's it! God bless you! Have a great day! :-)
 
 
@@ -237,10 +247,11 @@ Distributed under the GPL-3.0 license. See
 
 
 <!-- SUPPORT -->
+<!--
 ## Support
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L41DYXR5)
-
+-->
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
