@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/votd
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.8.0
+;; Package-Version: 0.8.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -536,7 +536,7 @@ but have everlasting life."
     url))
 
 ;;;###autoload
-(defun votd-listen-passage ()
+(defun votd-listen-passage-with-browser ()
   "Open a browser tab to listen the requested chapter."
   (interactive)
   (let* ((books-list (cond ((string= votd-bible-version "KJV")
@@ -549,9 +549,47 @@ but have everlasting life."
          (audio-link (votd-get-audio-link book (string-to-number input))))
     ;; More detailed message with the specific chapter being opened
     (message "Switch to your browser and click Play to listen %s %s (KJV)."
-             book input)
-    (format "%s %s\nListen online: %s" book input audio-link)))
+             book input)))
 
+;;;###autoload
+(defun votd-listen-passage-with-emms ()
+  "Download and play the requested Bible chapter audio within Emacs."
+  (interactive)
+  (let* ((books-list (cond ((string= votd-bible-version "KJV")
+                            votd-bible-books-kjv)
+                           (t votd-bible-books-kjv)))
+         (book (completing-read "Select Book: " (mapcar #'car books-list)))
+         (max-chapters (cdr (assoc book books-list)))
+         (input (read-string
+                 (format "Select Chapter from %s (1-%d): " book max-chapters)))
+         ;; Get the audio link but don't open it in a browser
+         (audio-link (let ((browse-url-browser-function #'ignore))
+                       (votd-get-audio-link book (string-to-number input))))
+         (output-file (concat "/tmp/" book "-" input ".mp3")))
+
+    ;; Extract the MP3 URL directly without writing to a file
+    (let ((mp3-url
+           (with-temp-buffer
+             (call-process-shell-command
+              (format "curl -s '%s' | grep -o 'https://[^\"]*\\.mp3' | head -1" audio-link)
+              nil t)
+             (if (> (point-max) (point-min))
+                 (buffer-substring-no-properties (point-min) (line-end-position))
+               nil))))
+
+      (if mp3-url
+          (progn
+            (call-process "curl" nil nil nil "-s" "-o" output-file mp3-url)
+
+            ;; Play the MP3
+            (if (file-exists-p output-file)
+                (progn
+                  (message "Playing %s %s..." book input)
+                  (if (fboundp 'emms-play-file)
+                      (emms-play-file output-file)
+                    (start-process "mplayer" nil "mplayer" output-file)))
+              (message "Failed to download audio for %s %s" book input)))
+        (message "No audio found for %s %s" book input)))))
 
 (provide 'votd)
 ;;; votd.el ends here
