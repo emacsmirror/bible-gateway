@@ -563,33 +563,52 @@ but have everlasting life."
          (input (read-string
                  (format "Select Chapter from %s (1-%d): " book max-chapters)))
          ;; Get the audio link but don't open it in a browser
-         (audio-link (let ((browse-url-browser-function #'ignore))
+         (audio-link (let ((browse-url-browser-function #'ignore)
+                           (url-show-status nil)) ; Silence "Contacting host..." messages
                        (votd-get-audio-link book (string-to-number input))))
-         (output-file (concat "/tmp/" book "-" input ".mp3")))
+         (output-file (concat "/tmp/" book "-" input ".mp3"))
+         (temp-html-file "/tmp/bible-page.html"))
 
-    ;; Extract the MP3 URL directly without writing to a file
-    (let ((mp3-url
-           (with-temp-buffer
-             (call-process-shell-command
-              (format "curl -s '%s' | grep -o 'https://[^\"]*\\.mp3' | head -1" audio-link)
-              nil t)
-             (if (> (point-max) (point-min))
-                 (buffer-substring-no-properties (point-min) (line-end-position))
-               nil))))
+    ;; Check if the file already exists in /tmp
+    (if (file-exists-p output-file)
+        ;; If it exists, play it directly
+        (progn
+          (message "Playing %s %s..." book input)
+          (if (fboundp 'emms-play-file)
+              (emms-play-file output-file)
+            (start-process "mplayer" nil "mplayer" output-file)))
 
-      (if mp3-url
-          (progn
-            (call-process "curl" nil nil nil "-s" "-o" output-file mp3-url)
+      ;; If it doesn't exist, download it
+      ;; Download the page first
+      (call-process-shell-command
+       (format "curl -s '%s' > %s" audio-link temp-html-file))
 
-            ;; Play the MP3
-            (if (file-exists-p output-file)
-                (progn
-                  (message "Playing %s %s..." book input)
-                  (if (fboundp 'emms-play-file)
-                      (emms-play-file output-file)
-                    (start-process "mplayer" nil "mplayer" output-file)))
-              (message "Failed to download audio for %s %s" book input)))
-        (message "No audio found for %s %s" book input)))))
+      ;; Use grep to extract the MP3 URL
+      (let* ((mp3-url (string-trim (shell-command-to-string
+                                    (format "grep -o 'https://stream.biblegateway.com/bibles/[^\"]*\\.mp3' %s | head -1"
+                                            temp-html-file)))))
+
+        ;; Remove the temporary HTML file
+        (when (file-exists-p temp-html-file)
+          (delete-file temp-html-file))
+
+        (if (string-match "^https://" mp3-url)
+            (progn
+              ;; Download the MP3 file using url-copy-file with status messages suppressed
+              (let ((url-show-status nil))
+                (url-copy-file mp3-url output-file t))
+
+              ;; Play the file if it exists
+              (if (file-exists-p output-file)
+                  (progn
+                    (message "Playing %s %s..." book input)
+                    (if (fboundp 'emms-play-file)
+                        ;; Use a let binding to prevent EMMS from showing playlist buffer
+                        (let ((emms-player-list-1 emms-player-list))
+                          (emms-play-file output-file))
+                      (start-process "mplayer" nil "mplayer" output-file)))
+                (message "Failed to download audio for %s %s" book input)))
+          (message "No audio found for %s %s" book input))))))
 
 (provide 'votd)
 ;;; votd.el ends here
