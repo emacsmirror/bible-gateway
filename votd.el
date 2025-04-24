@@ -416,7 +416,7 @@ but have everlasting life."
 
 ;;;###autoload
 (defun votd-get-passage ()
-  "Fetch a Bible passage with book name completion."
+  "Fetch a Bible passage from https://biblegateway.com/."
   (interactive)
   (let* ((book (votd-read-book))
          (passage (votd-read-chapter-verse book))
@@ -524,7 +524,6 @@ but have everlasting life."
 
 (defun votd-get-audio-link (book chapter &optional verse)
   "Generate and open BibleGateway audio link for BOOK CHAPTER and optional VERSE."
-  (interactive)
   (let* ((osis-code (cdr (assoc book votd-bible-books-osis)))
          (version (downcase votd-bible-version))
          (base-url "https://www.biblegateway.com/audio/dramatized")
