@@ -12,15 +12,24 @@
 <!-- PROJECT LOGO -->
 <br />
 <p align="center">
-  <h3 align="center">Bible Verse of The Day in Emacs</h3>
-
+  <h3 align="center">bible-gateway: A BibleGateway client for Emacs</h3>  
   <p align="center">
-    <b>votd</b>: A simple Emacs package that fetches the <b>v</b>erse
-    <b>o</b>f <b>t</b>he <b>d</b>ay and any requested verse, passage,
-    or chapter from https://BibleGateway.com
+    <b>bible-gateway</b> is a simple Emacs package that fetches the verse of the day, as well as any requested verse, passage, and chapter in both text and audio format from https://BibleGateway.com
     <br />
   </p>
 </p>
+
+------
+
+**Features:**
+- Fetches the verse of the day for use as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer or `*scratch*` buffer message.
+- Retrieves and inserts at point a requested verse, passage, or chapter.
+- Provides autocompletion for Bible books and offers hints about available chapters.
+- Supports various Bible translations available in different languages from the public domain, such as KJV (English), LSG (French), RVA (Spanish), ALB (Albanian), UKR (Ukrainian), ...
+- Allows users to request a chapter and retrieves and plays the audio in the Browser or in Emacs using EMMS (only in KJV).
+- 
+
+------
 
 #### Usage as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer
 
