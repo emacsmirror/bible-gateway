@@ -43,7 +43,7 @@
 
 #### Usage for inserting a Bible passage at point
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-get-passage.gif?raw=true">
+<img src="https://github.com/kristjoc/votd/blob/main/screenshots/bible-gateway-get-passage.gif?raw=true">
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">

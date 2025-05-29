@@ -50,7 +50,9 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defcustom bible-gateway-bible-version "KJV"
-  "The Bible version, default KJV. Other supported versions, which are available in the Public domain, are LSG in French, RVA in Spanish, ALB in Albanian, and UKR in Ukrainian."
+  "The Bible version, default KJV.
+Other supported versions, which are available in the Public domain, are
+LSG in French, RVA in Spanish, ALB in Albanian, and UKR in Ukrainian."
   :type 'string
   :group 'bible-gateway)
 
@@ -78,7 +80,7 @@ but have everlasting life."
   :group 'bible-gateway)
 
 (defcustom bible-gateway-include-ref t
-  "If non-nil, include the reference (e.g., 'John 3 (KJV)') when printing the passage."
+  "If non-nil, print the reference (e.g., \"John 3 (KJV)\") with the passage."
   :type 'boolean
   :group 'bible-gateway)
 
@@ -246,18 +248,18 @@ but have everlasting life."
   "Decode HTML entities in TEXT, including numeric character references."
   (when text
     (let ((entity-map '(("&ldquo;" . "\"")
-                        ("&rdquo;" . "\"")
-                        ("&#8212;" . "--")
-                        ("&#8217;" . "'")
-                        ("&#8220;" . "\"")
-                        ("&#8221;" . "\"")
-                        ("&quot;" . "\"")
-                        ("&apos;" . "'")
-                        ("&lt;" . "<")
-                        ("&gt;" . ">")
-                        ("&nbsp;" . " ")
-                        ("&amp;" . "&") ; Decode &amp; first
-                        ("&#039;" . "'")))) ; Decode numeric entities like &#039; after &amp;
+  ("&rdquo;" . "\"")
+  ("&#8212;" . "--")
+  ("&#8217;" . "'")
+  ("&#8220;" . "\"")
+  ("&#8221;" . "\"")
+  ("&quot;" . "\"")
+  ("&apos;" . "'")
+  ("&lt;" . "<")
+  ("&gt;" . ">")
+  ("&nbsp;" . " ")
+  ("&amp;" . "&") ; Decode &amp; first
+  ("&#039;" . "'")))) ; Decode numeric entities like &#039; after &amp;
       ;; Replace named entities
       (dolist (entity entity-map text)
         (setq text (replace-regexp-in-string (car entity) (cdr entity) text)))
@@ -369,13 +371,14 @@ but have everlasting life."
       (format "%s %s" book input))))
 
 (defun bible-gateway-process-verse-text (text)
-  "Process verse TEXT, handling special cases like small-caps LORD and UTF-8 encoding."
+  "Process verse TEXT.
+Handling special cases like small-caps LORD and UTF-8 encoding."
   (let ((processed-text text))
     ;; First decode UTF-8 octal sequences
     (setq processed-text
           (decode-coding-string
-           (string-as-unibyte processed-text)
-           'utf-8))
+           (encode-coding-string processed-text 'utf-8)
+	   'utf-8))
 
     ;; Replace small-caps span with "LORD"
     (setq processed-text
@@ -438,8 +441,8 @@ but have everlasting life."
 			(end (search-forward "\"")))
 		    ;; Decode the title here
 		    (setq title (decode-coding-string
-				 (string-as-unibyte
-				  (buffer-substring-no-properties start (1- end)))
+				 (encode-coding-string
+				  (buffer-substring-no-properties start (1- end)) 'utf-8)
 				 'utf-8)))))
 
               ;; Then get the verses
