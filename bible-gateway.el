@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 0.8.5
+;; Package-Version: 0.9
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -31,10 +31,18 @@
 ;; plays it in a browser tab or using EMMS.
 ;;
 ;; Usage:
-;; (bible-gateway-get-verse) fetches the verse of the day from https://biblegateway.com/.
-;; (bible-gateway-get-passage) fetches a specific passage and inserts it at point.
-;; (bible-gateway-listen-passage-in-browser) plays an audio chapter in the browser.
-;; (bible-gateway-listen-passage-with-emms) plays an audio chapter using EMMS.
+;;
+;; `(bible-gateway-get-verse)' fetches the verse of the day for
+;; use as an emacs-dashboard footer or a scratch buffer message.
+;;
+;; `(bible-gateway-get-passage)' fetches a specific passage and
+;; inserts it at point.
+;;
+;; `(bible-gateway-listen-passage-in-browser)' plays an audio chapter
+;; in the browser.
+;;
+;; `(bible-gateway-listen-passage-with-emms)' plays an audio chapter
+;; using EMMS.
 
 ;;; Code:
 
@@ -570,13 +578,10 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
          (audio-link (let ((browse-url-browser-function #'ignore)
                            (url-show-status nil)) ; Silence "Contacting host..." messages
                        (bible-gateway-get-audio-link book (string-to-number input))))
-         ;; (output-file (concat "/tmp/" book "-" input ".mp3"))
-
 	 (output-file (expand-file-name (concat book "-" input ".mp3")
 					(temporary-file-directory)))
          (temp-html-file (expand-file-name "bible-page.html"
 					   (temporary-file-directory))))
-    ;; (temp-html-file "/tmp/bible-page.html"))
 
     ;; Check if the file already exists in /tmp
     (if (file-exists-p output-file)
