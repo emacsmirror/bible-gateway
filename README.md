@@ -237,7 +237,7 @@ invoke `M-x bible-gateway-listen-passage-in-browser`, start typing the Bible boo
 `TAB`. Hit `RET` once the book is selected and enter the chapter number.
 After hitting `RET` again, switch to your browser and click Play to listen to the chapter.
 Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true) above to see how it works. Note that this is
-available only for the KJV translations.  
+available only for the KJV translation.  
 
 
 ### Listen to the selected chapter in Emacs using EMMS
@@ -248,7 +248,7 @@ invoke `M-x bible-gateway-listen-passage-with-emms`, start typing the Bible book
 After hitting `RET` again, EMMS will start playing the requested audio
 chapter.
 Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true) above to see how it works. Note that this feature
-is availabile only for the KJV translations.  
+is availabile only for the KJV translation.  
 
 Here is a minimal configuration for EMMS:
 
