@@ -451,50 +451,50 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
                   (let* ((start (point))
                          (end (search-forward "</div>"))
                          (raw-content (buffer-substring-no-properties start (1- end)))
-                         (verses '())
-                         (pos 0))
+                         (verses '()))
+                    ;; (pos 0))
 
-                    ;; First, remove chapter numbers
-                    (setq raw-content
-                          (replace-regexp-in-string
-			   "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
+                ;; First, remove chapter numbers
+                (setq raw-content
+                      (replace-regexp-in-string
+		       "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
 
-                    ;; Remove verse numbers but keep content
-                    (setq raw-content
-                          (replace-regexp-in-string
-			   "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
+                ;; Remove verse numbers but keep content
+                (setq raw-content
+                      (replace-regexp-in-string
+		       "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
 
-                    ;; Break the content into individual verse spans for processing
-                    (with-temp-buffer
-                      (insert raw-content)
-                      (goto-char (point-min))
-                      (while (re-search-forward "class=\"text [^\"]*-\\([0-9]+\\)\">" nil t)
-                        (let* ((verse-num (match-string 1))
-                               (verse-start (match-end 0))
-                               (verse-end (save-excursion
-                                            (if (re-search-forward "class=\"text" nil t)
-						(match-beginning 0)
-                                              (point-max))))
-                               (verse-content
-				(buffer-substring-no-properties verse-start verse-end))
-			       ;; First process the verse text normally
-                               (verse-text (bible-gateway-process-verse-text verse-content))
-			       ;; Then wrap it with proper formatting
-			       (final-text (bible-gateway-wrap-verse-text verse-text)))
-                          (when (not (string-empty-p final-text))
-			    (push (format "%s.%s%s" verse-num
-					  (if (< (string-to-number verse-num) 10) "  " " ")
-					  final-text)
-				  verses)))))
+                ;; Break the content into individual verse spans for processing
+                (with-temp-buffer
+                  (insert raw-content)
+                  (goto-char (point-min))
+                  (while (re-search-forward "class=\"text [^\"]*-\\([0-9]+\\)\">" nil t)
+                    (let* ((verse-num (match-string 1))
+                           (verse-start (match-end 0))
+                           (verse-end (save-excursion
+                                        (if (re-search-forward "class=\"text" nil t)
+					    (match-beginning 0)
+                                          (point-max))))
+                           (verse-content
+			    (buffer-substring-no-properties verse-start verse-end))
+			   ;; First process the verse text normally
+                           (verse-text (bible-gateway-process-verse-text verse-content))
+			   ;; Then wrap it with proper formatting
+			   (final-text (bible-gateway-wrap-verse-text verse-text)))
+                      (when (not (string-empty-p final-text))
+			(push (format "%s.%s%s" verse-num
+				      (if (< (string-to-number verse-num) 10) "  " " ")
+				      final-text)
+			      verses)))))
 
-                    ;; Insert title and verses
-                    (with-current-buffer original-buffer
-                      (when (and bible-gateway-include-ref title)
-			(insert title "\n\n"))
-                      (insert (string-join (reverse verses) "\n"))))
-	        (message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
-      ('error
-       (message "Error while fetching the passage: %s" (error-message-string err))))))
+                ;; Insert title and verses
+                (with-current-buffer original-buffer
+                  (when (and bible-gateway-include-ref title)
+		    (insert title "\n\n"))
+                  (insert (string-join (reverse verses) "\n"))))
+	      (message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
+    ('error
+     (message "Error while fetching the passage: %s" (error-message-string err))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                    Package Section III - Play Audio chapter                ;
@@ -526,7 +526,7 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
     ("3 John" . "3John") ("Jude" . "Jude") ("Revelation" . "Rev"))
   "Mapping of Bible book names to their OSIS abbreviations for audio links.")
 
-(defun bible-gateway-get-audio-link (book chapter &optional verse)
+(defun bible-gateway-get-audio-link (book chapter)
   "Generate and open BibleGateway audio link for BOOK CHAPTER and optional VERSE."
   (let* ((osis-code (cdr (assoc book bible-gateway-bible-books-osis)))
          (version (downcase bible-gateway-bible-version))
@@ -570,13 +570,18 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
          (audio-link (let ((browse-url-browser-function #'ignore)
                            (url-show-status nil)) ; Silence "Contacting host..." messages
                        (bible-gateway-get-audio-link book (string-to-number input))))
-         (output-file (concat "/tmp/" book "-" input ".mp3"))
-         (temp-html-file "/tmp/bible-page.html"))
+         ;; (output-file (concat "/tmp/" book "-" input ".mp3"))
+
+	 (output-file (expand-file-name (concat book "-" input ".mp3")
+					(temporary-file-directory)))
+         (temp-html-file (expand-file-name "bible-page.html"
+					   (temporary-file-directory))))
+    ;; (temp-html-file "/tmp/bible-page.html"))
 
     ;; Check if the file already exists in /tmp
     (if (file-exists-p output-file)
-        ;; If it exists, play it directly
-        (progn
+	;; If it exists, play it directly
+	(progn
           (message "Playing %s %s..." book input)
           (if (fboundp 'emms-play-file)
               (emms-play-file output-file)
@@ -589,30 +594,32 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
 
       ;; Use grep to extract the MP3 URL
       (let* ((mp3-url (string-trim (shell-command-to-string
-                                    (format "grep -o 'https://stream.biblegateway.com/bibles/[^\"]*\\.mp3' %s | head -1"
+                                    (format "grep -o 'https://streamnew.biblegateway.com/bibles/[^\"]*\\.mp3' %s | head -1"
                                             temp-html-file)))))
 
-        ;; Remove the temporary HTML file
-        (when (file-exists-p temp-html-file)
+	;; Remove the temporary HTML file
+	(when (file-exists-p temp-html-file)
           (delete-file temp-html-file))
 
-        (if (string-match "^https://" mp3-url)
+	(if (string-match "^https://" mp3-url)
             (progn
               ;; Download the MP3 file using url-copy-file with status messages suppressed
               (let ((url-show-status nil))
-                (url-copy-file mp3-url output-file t))
+		(url-copy-file mp3-url output-file t))
 
               ;; Play the file if it exists
               (if (file-exists-p output-file)
                   (progn
                     (message "Playing %s %s..." book input)
                     (if (fboundp 'emms-play-file)
-                        ;; Use a let binding to prevent EMMS from showing playlist buffer
-                        (let ((emms-player-list-1 emms-player-list))
+			(progn
+			  (require 'emms)
+			  ;; (let ((emms-player-list-1 emms-player-list))
                           (emms-play-file output-file))
                       (start-process "mplayer" nil "mplayer" output-file)))
-                (message "Failed to download audio for %s %s" book input)))
-          (message "No audio found for %s %s" book input))))))
+		(progn
+		  (message "Failed to download audio for %s %s" book input))
+		(message "No audio found for %s %s" book input))))))))
 
 (provide 'bible-gateway)
 ;;; bible-gateway.el ends here

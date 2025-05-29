@@ -33,17 +33,17 @@
 
 #### Usage as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-dark.png?raw=true">
+<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/dashboard-dark.png?raw=true">
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/dashboard-light.png?raw=true">
+<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/dashboard-light.png?raw=true">
 
 #### Usage as a `*scratch*` buffer message
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/scratch-dark.png?raw=true">
+<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/scratch-dark.png?raw=true">
 
 #### Usage for inserting a Bible passage at point
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/bible-gateway-get-passage.gif?raw=true">
+<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-get-passage.gif?raw=true">
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
@@ -64,24 +64,20 @@
 <!-- INTRODUCTION -->
 ## Introduction
 
-votd is a simple Emacs package that fetches the Bible verse of the day
-from the [BibleGateway](https://www.biblegateway.com/). What it
+bible-gateway is a simple Emacs package that fetches content from the [BibleGateway](https://www.biblegateway.com/). What it
 basically does is retrieve the content from the
 [BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
 API in JSON format and then format the text and reference accordingly.
 It can also insert any requested Bible verse, passage, or chapter at the
 current point in the buffer.  
 
-I'm currently using it to display the verse of the day as a footer in
-the Emacs [dashboard](https://github.com/emacs-dashboard/emacs-dashboard), as
-well as in the `*scratch*` buffer message.
 
 <!-- INSTALLATION -->
 ## Installation
 
 ### From MELPA (Recommended)
 
-Starting from April 2025, [`votd`](https://melpa.org/#/votd) is available on MELPA. To install it using the package manager:
+Starting from April 2025, [`bible-gateway`](https://melpa.org/#/bible-gateway) is available on MELPA. To install it using the package manager:
 
 1. Ensure MELPA is added to your `package-archives` (if not already):
    ```commonlisp
@@ -89,10 +85,10 @@ Starting from April 2025, [`votd`](https://melpa.org/#/votd) is available on MEL
    (add-to-list 'package-archives '("melpa" . "https://melpa.org/packages/") t)
    ```
 
-2. Refresh the package list and install `votd`:
+2. Refresh the package list and install `bible-gateway`:
    ```commonlisp
    M-x package-refresh-contents RET
-   M-x package-install RET votd RET
+   M-x package-install RET bible-gateway RET
    ```
 
 ### From GitHub
@@ -102,18 +98,18 @@ To fetch the package directly from source you can use
 `*scratch*` buffer and `yank` the following line:
 
 ``` commonlisp
-(package-vc-install '(votd :vc-backend Git :url  "https://github.com/kristjoc/votd"))
+(package-vc-install '(bible-gateway :vc-backend Git :url  "https://github.com/kristjoc/bible-gateway"))
 ```
 
 Hit `C-x C-e` once you move the cursor to the last parenthesis. For Emacs 30, you can use the
 new `:vc` keyword of `use-package` as follows:
 
 ``` commonlisp
-(use-package votd
-  :vc (:url "https://github.com/kristjoc/votd")) ; For Emacs>=30
+(use-package bible-gateway
+  :vc (:url "https://github.com/kristjoc/bible-gateway")) ; For Emacs>=30
 ```
 
-Alternatively, clone the repository from GitHub and install `votd.el` with `M-x package-install-file`.
+Alternatively, clone the repository from GitHub and install `bible-gateway.el` with `M-x package-install-file`.
 
 
 <!-- CONFIGURATION -->
@@ -125,13 +121,13 @@ If you would like to use the verse of the day as your `*scratch*`
 buffer message, use the following configuration in your `init.el`:
 
 ``` commonlisp
-(use-package votd
+(use-package bible-gateway
   :config
   (setq initial-scratch-message
 	(concat ";;; *scratch* ;;;\n\n"
 		(string-join
 		 (mapcar (lambda (line) (concat ";;; " line))
-			 (split-string (votd-get-verse) "\n"))
+			 (split-string (bible-gateway-get-verse) "\n"))
 		 "\n")
 		"\n;;;\n")))
 ```
@@ -142,7 +138,7 @@ By setting `(setq inhibit-splash-screen t)`, the `*scratch*` buffer will be disp
 Additionally, here is a minimal `init.el` to add the verse of the day to your `emacs-dashboard` footer:
 
 ``` commonlisp
-;;; init.el --- minimal init.el for emacs-dashboard & votd -*- lexical-binding: t -*-
+;;; init.el --- minimal init.el for emacs-dashboard & bible-gateway -*- lexical-binding: t -*-
 ;;; Commentary:
 ;;; Code:
 
@@ -161,12 +157,12 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
   :config 
   (setq dashboard-center-content t))
 
-;; install votd from MELPA
-(use-package votd
+;; install bible-gateway from MELPA
+(use-package bible-gateway
   :ensure t
   :after dashboard
   :config
-  (setq dashboard-footer-messages (list (votd-get-verse)))) ; votd as emacs-dashboard footer
+  (setq dashboard-footer-messages (list (bible-gateway-get-verse))))
 
 (provide 'init)
 ;;; init.el ends here
@@ -177,11 +173,11 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
 To use the verse of the day both as a `*scratch*` message and as a footer in the `emacs-dashboard`, change the `use-package` configuration as follows:
 
 ``` commonlisp
-(use-package votd
+(use-package bible-gateway
   :ensure t
   :after dashboard
   :config
-  (let ((verse (votd-get-verse)))
+  (let ((verse (bible-gateway-get-verse)))
     (setq dashboard-footer-messages (list verse))
     (setq initial-scratch-message
 	  (concat ";;; *scratch* ;;;\n\n"
@@ -197,34 +193,47 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
 If you're using `doom-dashboard`, the following snippet from a Reddit comment should do the trick.
 
 ``` commonlisp
-(use-package votd
+(use-package bible-gateway
   :config
-  (defun doom-dashboard-widget-votd ()
-    (insert "\n" (+doom-dashboard--center +doom-dashboard--width (votd-get-verse))))
-  (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-votd))
+  (defun doom-dashboard-widget-bible-gateway ()
+    (insert "\n" (+doom-dashboard--center +doom-dashboard--width (bible-gateway-get-verse))))
+  (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-bible-gateway))
 ```
 
 ### Insert a Bible passage at point
 
 To insert a Bible passage in the current buffer, at point, invoke `M-x
-votd-get-passage`, start typing the Bible book and autocomplete with
+bible-gateway-get-passage`, start typing the Bible book and autocomplete with
 `TAB`. Hit `RET` once the book is selected and enter the desired passage. It
 is possible to request a single verse (John 3:16), a verse range (John
 3:16-17), a single chapter (John 3), and a chapter range (John 3-4).
 Hit `RET` in the end to view the content. Set the user option
-`votd-include-ref` to `t` to include the reference, or to `nil` to
+`bible-gateway-include-ref` to `t` to include the reference, or to `nil` to
 exclude it.
 
 
 ### Listen to the selected chapter in your Browser
 
 To open the audio link for the selected chapter in your browser from Emacs,
-invoke `M-x votd-listen-passage`, start typing the Bible book and autocomplete with
+invoke `M-x bible-gateway-listen-passage-in-browser`, start typing the Bible book and autocomplete with
 `TAB`. Hit `RET` once the book is selected and enter the chapter number.
 After hitting `RET` again, switch to your browser and click Play to listen to the chapter.  
 Check out the demo below to see how it works:
 
-<img src="https://github.com/kristjoc/votd/blob/main/screenshots/votd-listen-passage.gif?raw=true">
+<img
+src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true">
+
+
+### Listen to the selected chapter in Emacs using EMMS
+
+To listen to the selected chapter in Emacs using EMMS,
+invoke `M-x bible-gateway-listen-passage-with-emms`, start typing the Bible book and autocomplete with
+`TAB`. Hit `RET` once the book is selected and enter the chapter number.
+After hitting `RET` again, EMMS will start playing the requested audio
+chapter.  
+Check out the demo below to see how it works:
+
+<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true">
 
 And that's it! God bless you! Have a great day! :-)
 
@@ -246,7 +255,7 @@ to learn and create. Any contributions you make are **appreciated**.
 ## License
 
 Distributed under the GPL-3.0 license. See
-[`LICENSE`](https://github.com/kristjoc/votd/blob/main/LICENSE) for more information.
+[`LICENSE`](https://github.com/kristjoc/bible-gateway/blob/main/LICENSE) for more information.
 
 
 <!-- CONTACT -->
@@ -256,11 +265,10 @@ Distributed under the GPL-3.0 license. See
 
 
 <!-- SUPPORT -->
-<!--
 ## Support
 
 [![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L41DYXR5)
--->
+
 
 <!-- ACKNOWLEDGEMENTS -->
 ## Acknowledgements
@@ -274,11 +282,11 @@ Distributed under the GPL-3.0 license. See
 
 <!-- MARKDOWN LINKS & IMAGES -->
 <!-- https://www.markdownguide.org/basic-syntax/#reference-style-links -->
-[contributors-shield]: https://img.shields.io/github/contributors/kristjoc/votd.svg?style=for-the-badge
-[contributors-url]: https://github.com/kristoc/votd/graphs/contributors
-[forks-shield]: https://img.shields.io/github/forks/kristjoc/votd.svg?style=for-the-badge
-[forks-url]: https://github.com/kristjoc/votd/network/members
-[stars-shield]: https://img.shields.io/github/stars/kristjoc/votd.svg?style=for-the-badge
-[stars-url]: https://github.com/kristjoc/votd/stargazers
-[issues-shield]: https://img.shields.io/github/issues/kristjoc/votd.svg?style=for-the-badge
-[issues-url]: https://github.com/kristjoc/votd/issues
+[contributors-shield]: https://img.shields.io/github/contributors/kristjoc/bible-gateway.svg?style=for-the-badge
+[contributors-url]: https://github.com/kristoc/bible-gateway/graphs/contributors
+[forks-shield]: https://img.shields.io/github/forks/kristjoc/bible-gateway.svg?style=for-the-badge
+[forks-url]: https://github.com/kristjoc/bible-gateway/network/members
+[stars-shield]: https://img.shields.io/github/stars/kristjoc/bible-gateway.svg?style=for-the-badge
+[stars-url]: https://github.com/kristjoc/bible-gateway/stargazers
+[issues-shield]: https://img.shields.io/github/issues/kristjoc/bible-gateway.svg?style=for-the-badge
+[issues-url]: https://github.com/kristjoc/bible-gateway/issues
