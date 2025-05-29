@@ -43,7 +43,22 @@
 
 #### Usage for inserting a Bible passage at point
 
-<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-get-passage.gif?raw=true">
+<img
+src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-get-passage.gif?raw=true">
+
+#### Usage for playing the audio of a chapter in the browser
+
+<img
+src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true">
+
+#### Usage for playing the audio of a chapter with EMMS
+
+<img
+src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true">
+
+
+------
+
 
 <!-- TABLE OF CONTENTS -->
 <details open="open">
@@ -64,12 +79,13 @@
 <!-- INTRODUCTION -->
 ## Introduction
 
-bible-gateway is a simple Emacs package that fetches content from the [BibleGateway](https://www.biblegateway.com/). What it
-basically does is retrieve the content from the
-[BibleGateway](https://www.biblegateway.com/votd/get/?format=json&version=KJV)
-API in JSON format and then format the text and reference accordingly.
-It can also insert any requested Bible verse, passage, or chapter at the
-current point in the buffer.  
+bible-gateway is a simple Emacs package that fetches content from
+[BibleGateway](https://www.biblegateway.com/). It retrieves data from
+the BibleGateway API in JSON format and formats the text and
+references accordingly. In addition to fetching the verse of the day,
+it can also insert any requested Bible verse, passage, or chapter at
+the current point in the buffer. The package also supports playing
+audio chapters directly in a browser or within Emacs using EMMS.  
 
 
 <!-- INSTALLATION -->
@@ -77,7 +93,9 @@ current point in the buffer.
 
 ### From MELPA (Recommended)
 
-Starting from April 2025, [`bible-gateway`](https://melpa.org/#/bible-gateway) is available on MELPA. To install it using the package manager:
+Starting from April 2025,
+[`bible-gateway`](https://melpa.org/#/bible-gateway), formerly votd,
+is available on MELPA. To install it using the package manager:
 
 1. Ensure MELPA is added to your `package-archives` (if not already):
    ```commonlisp
@@ -209,7 +227,7 @@ is possible to request a single verse (John 3:16), a verse range (John
 3:16-17), a single chapter (John 3), and a chapter range (John 3-4).
 Hit `RET` in the end to view the content. Set the user option
 `bible-gateway-include-ref` to `t` to include the reference, or to `nil` to
-exclude it.
+exclude it.  
 
 
 ### Listen to the selected chapter in your Browser
@@ -217,11 +235,9 @@ exclude it.
 To open the audio link for the selected chapter in your browser from Emacs,
 invoke `M-x bible-gateway-listen-passage-in-browser`, start typing the Bible book and autocomplete with
 `TAB`. Hit `RET` once the book is selected and enter the chapter number.
-After hitting `RET` again, switch to your browser and click Play to listen to the chapter.  
-Check out the demo below to see how it works:
-
-<img
-src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true">
+After hitting `RET` again, switch to your browser and click Play to listen to the chapter.
+Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true) above to see how it works. Note that this is
+available only for the KJV translations.  
 
 
 ### Listen to the selected chapter in Emacs using EMMS
@@ -230,10 +246,21 @@ To listen to the selected chapter in Emacs using EMMS,
 invoke `M-x bible-gateway-listen-passage-with-emms`, start typing the Bible book and autocomplete with
 `TAB`. Hit `RET` once the book is selected and enter the chapter number.
 After hitting `RET` again, EMMS will start playing the requested audio
-chapter.  
-Check out the demo below to see how it works:
+chapter.
+Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true) above to see how it works. Note that this feature
+is availabile only for the KJV translations.  
 
-<img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true">
+Here is a minimal configuration for EMMS:
+
+``` commonlisp
+(use-package emms
+  :ensure t
+  :init
+  (require 'emms-setup)
+  (emms-all)
+  (setq emms-player-list '(emms-player-mpv emms-player-mplayer)))
+
+```
 
 And that's it! God bless you! Have a great day! :-)
 
