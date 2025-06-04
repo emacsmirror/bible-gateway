@@ -599,7 +599,7 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
 
       ;; Use grep to extract the MP3 URL
       (let* ((mp3-url (string-trim (shell-command-to-string
-                                    (format "grep -o 'https://streamnew.biblegateway.com/bibles/[^\"]*\\.mp3' %s | head -1"
+                                    (format "grep -o 'https://stream.biblegateway.com/bibles/[^\"]*\\.mp3' %s | head -1"
                                             temp-html-file)))))
 
 	;; Remove the temporary HTML file
