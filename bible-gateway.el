@@ -427,14 +427,24 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
       (buffer-string))))
 
 ;;;###autoload
-(defun bible-gateway-get-passage ()
-  "Fetch a Bible passage from https://biblegateway.com/."
+(defun bible-gateway-get-passage (&optional book passage)
+  "Fetch a Bible passage from https://biblegateway.com/.
+If BOOK and PASSAGE are provided, use them directly.
+If only BOOK is provided, prompt for passage only. TODO: Validate BOOK string.
+If neither, prompt for both."
   (interactive)
-  (let* ((book (bible-gateway-read-book))
-         (passage (bible-gateway-read-chapter-verse book))
-	 (formatted-passage (replace-regexp-in-string " " "" passage))
+  (let* ((book-supplied (and book (not (string-empty-p book))))
+         (passage-supplied (and passage (not (string-empty-p passage))))
+         (chosen-book (if book-supplied book (bible-gateway-read-book)))
+         (chosen-passage (if passage-supplied
+                             passage
+                           (bible-gateway-read-chapter-verse chosen-book)))
+         (search-string (if passage-supplied
+                            (concat chosen-book (replace-regexp-in-string " " "" chosen-passage))
+                          (replace-regexp-in-string " " "" chosen-passage)))
          (url (concat "https://www.biblegateway.com/passage/?search="
-		      formatted-passage "&version=" bible-gateway-bible-version)))
+                      search-string
+                      "&version=" bible-gateway-bible-version)))
     (condition-case err
         (let ((original-buffer (current-buffer)))
           (with-current-buffer (url-retrieve-synchronously url t t bible-gateway-request-timeout)
@@ -462,47 +472,48 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
                          (verses '()))
                     ;; (pos 0))
 
-                ;; First, remove chapter numbers
-                (setq raw-content
-                      (replace-regexp-in-string
-		       "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
+                    ;; First, remove chapter numbers
+                    (setq raw-content
+			  (replace-regexp-in-string
+			   "<span class=\"chapternum\">[^<]*</span>" "" raw-content))
 
-                ;; Remove verse numbers but keep content
-                (setq raw-content
-                      (replace-regexp-in-string
-		       "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
+                    ;; Remove verse numbers but keep content
+                    (setq raw-content
+			  (replace-regexp-in-string
+			   "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
 
-                ;; Break the content into individual verse spans for processing
-                (with-temp-buffer
-                  (insert raw-content)
-                  (goto-char (point-min))
-                  (while (re-search-forward "class=\"text [^\"]*-\\([0-9]+\\)\">" nil t)
-                    (let* ((verse-num (match-string 1))
-                           (verse-start (match-end 0))
-                           (verse-end (save-excursion
-                                        (if (re-search-forward "class=\"text" nil t)
-					    (match-beginning 0)
-                                          (point-max))))
-                           (verse-content
-			    (buffer-substring-no-properties verse-start verse-end))
-			   ;; First process the verse text normally
-                           (verse-text (bible-gateway-process-verse-text verse-content))
-			   ;; Then wrap it with proper formatting
-			   (final-text (bible-gateway-wrap-verse-text verse-text)))
-                      (when (not (string-empty-p final-text))
-			(push (format "%s.%s%s" verse-num
-				      (if (< (string-to-number verse-num) 10) "  " " ")
-				      final-text)
-			      verses)))))
+                    ;; Break the content into individual verse spans for processing
+                    (with-temp-buffer
+                      (insert raw-content)
+                      (goto-char (point-min))
+                      (while (re-search-forward "class=\"text [^\"]*-\\([0-9]+\\)\">" nil t)
+			(let* ((verse-num (match-string 1))
+                               (verse-start (match-end 0))
+                               (verse-end (save-excursion
+                                            (if (re-search-forward "class=\"text" nil t)
+						(match-beginning 0)
+                                              (point-max))))
+                               (verse-content
+				(buffer-substring-no-properties verse-start verse-end))
+			       ;; First process the verse text normally
+                               (verse-text (bible-gateway-process-verse-text verse-content))
+			       ;; Then wrap it with proper formatting
+			       (final-text (bible-gateway-wrap-verse-text verse-text)))
+			  (when (not (string-empty-p final-text))
+			    (push (format "%s.%s%s" verse-num
+					  (if (< (string-to-number verse-num) 10) "  " " ")
+					  final-text)
+				  verses)))))
 
-                ;; Insert title and verses
-                (with-current-buffer original-buffer
-                  (when (and bible-gateway-include-ref title)
-		    (insert title "\n\n"))
-                  (insert (string-join (reverse verses) "\n"))))
-	      (message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
-    ('error
-     (message "Error while fetching the passage: %s" (error-message-string err))))))
+                    ;; Insert title and verses
+                    (with-current-buffer original-buffer
+                      (when (and bible-gateway-include-ref title)
+			(insert title "\n\n"))
+                      (insert (string-join (reverse verses) "\n")))
+		    (message "Bible passage inserted successfully!"))
+		(message "Sorry, we didn’t find any results for your search. Please double-check that the chapter and verse numbers are valid.")))))
+      ('error
+       (message "Error while fetching the passage: %s" (error-message-string err))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                    Package Section III - Play Audio chapter                ;
@@ -542,8 +553,6 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
          (url (if osis-code
                   (format "%s/%s/%s.%d" base-url version osis-code chapter)
 		(error "Unknown book: %s" book))))
-    ;; Open URL in browser
-    (browse-url url)
     ;; Return URL for display
     url))
 
@@ -559,6 +568,7 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
          (input (read-string
                  (format "Select Chapter from %s (1-%d): " book max-chapters)))
          (audio-link (bible-gateway-get-audio-link book (string-to-number input))))
+    (browse-url audio-link)
     ;; More detailed message with the specific chapter being opened
     (message "Switch to your browser and click Play to listen %s %s (KJV)."
              book input)))
