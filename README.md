@@ -6,7 +6,8 @@
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
-  
+<br>
+[![MELPA](https://melpa.org/packages/bible-gateway-badge.svg)](https://melpa.org/#/bible-gateway)
 </div>
 
 <!-- PROJECT LOGO -->
