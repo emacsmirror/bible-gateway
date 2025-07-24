@@ -1,13 +1,13 @@
 <!-- PROJECT SHIELDS -->
 
 <div align="center">
-  
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
 [![Issues][issues-shield]][issues-url]
 <br>
 [![MELPA](https://melpa.org/packages/bible-gateway-badge.svg)](https://melpa.org/#/bible-gateway)
+[![MELPA Stable](https://stable.melpa.org/packages/bible-gateway-badge.svg)](https://stable.melpa.org/#/bible-gateway)
 </div>
 
 <!-- PROJECT LOGO -->
@@ -26,8 +26,12 @@
 - Fetches the verse of the day for use as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer or `*scratch*` buffer message.
 - Retrieves and inserts at point a requested verse, passage, or chapter.
 - Provides autocompletion for Bible books and offers hints about available chapters.
-- Supports various Bible translations available in different languages from the public domain, such as KJV (English), LSG (French), RVA (Spanish), ALB (Albanian), UKR (Ukrainian), ...
-- Allows users to request a chapter and retrieves and plays the audio in the Browser or in Emacs using EMMS (only in KJV).
+- Supports various Bible translations available in different languages
+  from the public domain, such as KJV (English), LSG (French), RVA
+  (Spanish), ALB (Albanian), UKR (Ukrainian), ...
+- Allows users to request a Bible chapter and opens a browser tab
+  playing the selected chapter's audio from the [Zondervan King James
+  Audio Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
 - 
 
 ------
@@ -52,10 +56,13 @@ src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gatew
 <img
 src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true">
 
-#### Usage for playing the audio of a chapter with EMMS
+#### Usage for playing the audio of a chapter with EMMS (not available
+due to Copyright)
 
+<!--
 <img
 src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true">
+-->
 
 
 ------
@@ -86,7 +93,7 @@ the BibleGateway API in JSON format and formats the text and
 references accordingly. In addition to fetching the verse of the day,
 it can also insert any requested Bible verse, passage, or chapter at
 the current point in the buffer. The package also supports playing
-audio chapters directly in a browser or within Emacs using EMMS.  
+audio chapters directly in a browser tab.  
 
 
 <!-- INSTALLATION -->
@@ -231,7 +238,7 @@ Hit `RET` in the end to view the content. Set the user option
 exclude it.  
 
 
-### Listen to the selected chapter in your Browser
+### Listen to the selected chapter in your Browser Tab
 
 To open the audio link for the selected chapter in your browser from Emacs,
 invoke `M-x bible-gateway-listen-passage-in-browser`, start typing the Bible book and autocomplete with
@@ -243,25 +250,14 @@ available only for the KJV translation.
 
 ### Listen to the selected chapter in Emacs using EMMS
 
-To listen to the selected chapter in Emacs using EMMS,
-invoke `M-x bible-gateway-listen-passage-with-emms`, start typing the Bible book and autocomplete with
-`TAB`. Hit `RET` once the book is selected and enter the chapter number.
-After hitting `RET` again, EMMS will start playing the requested audio
-chapter.
-Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true) above to see how it works. Note that this feature
-is availabile only for the KJV translation.  
+Due to Copyright, this feature is not available anymore.
 
-Here is a minimal configuration for EMMS:
-
-``` commonlisp
-(use-package emms
-  :ensure t
-  :init
-  (require 'emms-setup)
-  (emms-all)
-  (setq emms-player-list '(emms-player-mpv emms-player-mplayer)))
-
-```
+Although the mp3 URL is exposed from BibleGateway source website,
+downloading them to a temporary directory and playing using EMMS is
+not permitted, according to HarperCollins Christian Publishing. The
+audio content is protected by copyright law and is intended for
+streaming through authorized platforms only. Please, use the Browser
+Tab feature for Bible Audio.
 
 And that's it! God bless you! Have a great day! :-)
 
@@ -290,12 +286,6 @@ Distributed under the GPL-3.0 license. See
 ## Contact
 
 [Signal Me](https://signal.me/#eu/7axcnRBeqe3T1fJ3aDXFqFUOU68-DiBzkLbU3U5kogZ1UR7N5YlH665PzEOJSxdD)
-
-
-<!-- SUPPORT -->
-## Support
-
-[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/L3L41DYXR5)
 
 
 <!-- ACKNOWLEDGEMENTS -->
