@@ -1,6 +1,7 @@
 <!-- PROJECT SHIELDS -->
 
 <div align="center">
+
 [![Contributors][contributors-shield]][contributors-url]
 [![Forks][forks-shield]][forks-url]
 [![Stargazers][stars-shield]][stars-url]
@@ -30,7 +31,7 @@
   from the public domain, such as KJV (English), LSG (French), RVA
   (Spanish), ALB (Albanian), UKR (Ukrainian), ...
 - Allows users to request a Bible chapter and opens a browser tab
-  playing the selected chapter's audio from the [Zondervan King James
+  with the selected chapter's audio from the [Zondervan King James
   Audio Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
 - 
 
@@ -56,13 +57,9 @@ src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gatew
 <img
 src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true">
 
-#### Usage for playing the audio of a chapter with EMMS (not available
-due to Copyright)
+#### Usage for playing the audio of a chapter with EMMS
 
-<!--
-<img
-src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-with-emms.gif?raw=true">
--->
+Not available anymore due to Copyright
 
 
 ------
