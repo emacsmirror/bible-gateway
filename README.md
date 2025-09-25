@@ -12,6 +12,9 @@
 </div>
 
 <!-- PROJECT LOGO -->
+
+# UPDATE: In UK, EU, EEA, BibleGateway limited its website to only reading the Bible, making the verse of the day feature currently unavailable. Please, stay tuned for a solution, or feel free to propose one by opening an issue. Thank you!
+
 <br />
 <p align="center">
   <h3 align="center">bible-gateway: A BibleGateway client for Emacs</h3>  
