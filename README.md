@@ -13,8 +13,6 @@
 
 <!-- PROJECT LOGO -->
 
-# UPDATE: In UK, EU, EEA, BibleGateway limited its website to only reading the Bible, making the verse of the day feature currently unavailable. Please, stay tuned for a solution, or feel free to propose one by opening an issue. Thank you!
-
 <br />
 <p align="center">
   <h3 align="center">bible-gateway: A BibleGateway client for Emacs</h3>  
@@ -141,6 +139,12 @@ Alternatively, clone the repository from GitHub and install `bible-gateway.el` w
 <!-- CONFIGURATION -->
 ## Configuration & Usage
 
+The BibleGateway website in the UK, EU, and EEA has very
+limited features and the Verse of the Day API is no longer available.
+Please use the `bible-gateway-get-verse-in-eu` function instead of
+`bible-gateway-get-verse` in the examples below if you're in
+the EU/EEA/UK.
+
 ### `*scratch*` buffer message
 
 If you would like to use the verse of the day as your `*scratch*`
@@ -154,6 +158,7 @@ buffer message, use the following configuration in your `init.el`:
 		(string-join
 		 (mapcar (lambda (line) (concat ";;; " line))
 			 (split-string (bible-gateway-get-verse) "\n"))
+			 ;; If you're in EU, use (split-string (bible-gateway-get-verse-in-eu) "\n"))
 		 "\n")
 		"\n;;;\n")))
 ```
@@ -180,7 +185,7 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
   :ensure t
   :init
   (dashboard-setup-startup-hook)
-  :config 
+  :config
   (setq dashboard-center-content t))
 
 ;; install bible-gateway from MELPA
@@ -189,6 +194,7 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
   :after dashboard
   :config
   (setq dashboard-footer-messages (list (bible-gateway-get-verse))))
+  ;; If you're in EU, use (setq dashboard-footer-messages (list (bible-gateway-get-verse-in-eu))))
 
 (provide 'init)
 ;;; init.el ends here
@@ -204,6 +210,7 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
   :after dashboard
   :config
   (let ((verse (bible-gateway-get-verse)))
+  ;; If you're in EU, use (let ((verse (bible-gateway-get-verse-in-eu)))
     (setq dashboard-footer-messages (list verse))
     (setq initial-scratch-message
 	  (concat ";;; *scratch* ;;;\n\n"
@@ -216,7 +223,10 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
 
 ### `doom-dashboard`
 
-If you're using `doom-dashboard`, the following snippet from a Reddit comment should do the trick.
+If you're using `doom-dashboard`, the following snippet from a Reddit
+comment should do the trick.  
+Replace `bible-gateway-get-verse` with `bible-gateway-get-verse-in-eu`
+if you're in the EU.
 
 ``` commonlisp
 (use-package bible-gateway
