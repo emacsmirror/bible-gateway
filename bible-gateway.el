@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.2
+;; Package-Version: 1.3
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,15 +32,17 @@
 ;; `bible-gateway-get-verse' fetches the verse of the day for use as
 ;; an emacs-dashboard footer or a scratch buffer message.
 ;;
+;; `bible-gateway-get-verse-in-eu' is similar to
+;; `bible-gateway-get-verse' but scrapes the verse of the day from the
+;; BibleGateway website for users in EU where the API is not
+;; accessible.
+;;
 ;; `bible-gateway-get-passage' fetches a specific passage and inserts
 ;; it at point. It can be called both interactively from M-x or
 ;; programmatically with the book name and verse(s) as arguments.
 ;;
 ;; M-x `bible-gateway-listen-passage-in-browser' plays a specific
 ;; audio chapter in the browser.
-;;
-;; M-x `bible-gateway-listen-passage-with-emms' plays a specific audio
-;; chapter using EMMS.
 
 ;;; Code:
 
@@ -317,7 +319,7 @@ but have everlasting life."
   (condition-case err
       (bible-gateway-fetch-daily-bible-verse)
     (error
-     (message "Today's verse could not be fetched: %s" (error-message-string err)))))
+     (message "Failed to fetch the verse of the day! Error: %s)" (error-message-string err)))))
 
 ;;;###autoload
 (defun bible-gateway-get-verse-in-eu ()
@@ -340,7 +342,8 @@ Returns a single formatted string without verse numbers nor reference."
                (book (string-join (butlast parts) " ")))
           ;; 3. Capture passage output.
           (with-temp-buffer
-            (bible-gateway-get-passage book passage)
+	    (let ((bible-gateway-include-ref nil))
+              (bible-gateway-get-passage book passage))
             (let* ((raw (buffer-string))
                    ;; Remove any success/status lines.
                    (raw (replace-regexp-in-string "Bible passage inserted successfully!.*$" "" raw))
@@ -389,6 +392,7 @@ Returns a single formatted string without verse numbers nor reference."
             (aligned-ref (concat (make-string (max 0 (- bible-gateway-text-width (length ref-text))) ?\s)
                                  ref-text)))
        (format "%s\n%s" formatted aligned-ref)))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                     Package section II - Fetch a Bible Passage             ;
@@ -645,67 +649,6 @@ Please double-check that the chapter and verse numbers are valid."))))))
     (message "Switch to your browser and click Play to listen %s %s (KJV)."
              book input)))
 
-;; (defun bible-gateway-listen-passage-with-emms ()
-;;   "Download and play the requested Bible chapter audio with EMMS."
-;;   (interactive)
-;;   (let* ((books-list (cond ((string= bible-gateway-bible-version "KJV")
-;;                             bible-gateway-bible-books-kjv)
-;;                            (t bible-gateway-bible-books-kjv)))
-;;          (book (completing-read "Select Book: " (mapcar #'car books-list)))
-;;          (max-chapters (cdr (assoc book books-list)))
-;;          (input (read-string
-;;                  (format "Select Chapter from %s (1-%d): " book max-chapters)))
-;;          ;; Get the audio link but don't open it in a browser
-;;          (audio-link (let ((browse-url-browser-function #'ignore)
-;;                            (url-show-status nil)) ; Silence "Contacting host..." messages
-;;                        (bible-gateway-get-audio-link book (string-to-number input))))
-;; 	 (output-file (expand-file-name (concat book "-" input ".mp3")
-;; 					(temporary-file-directory)))
-;;          (temp-html-file (expand-file-name "bible-page.html"
-;; 					   (temporary-file-directory))))
-
-;;     ;; Check if the file already exists in /tmp
-;;     (if (file-exists-p output-file)
-;; 	;; If it exists, play it directly
-;; 	(progn
-;;           (message "Playing %s %s..." book input)
-;;           (if (fboundp 'emms-play-file)
-;;               (emms-play-file output-file)
-;;             (start-process "mplayer" nil "mplayer" output-file)))
-
-;;       ;; If it doesn't exist, download it
-;;       ;; Download the page first
-;;       (call-process-shell-command
-;;        (format "curl -s '%s' > %s" audio-link temp-html-file))
-
-;;       ;; Use grep to extract the MP3 URL
-;;       (let* ((mp3-url (string-trim (shell-command-to-string
-;;                                     (format "grep -o 'https://stream.biblegateway.com/bibles/[^\"]*\\.mp3' %s | head -1"
-;;                                             temp-html-file)))))
-
-;; 	;; Remove the temporary HTML file
-;; 	(when (file-exists-p temp-html-file)
-;;           (delete-file temp-html-file))
-
-;; 	(if (string-match "^https://" mp3-url)
-;;             (progn
-;;               ;; Download the MP3 file using url-copy-file with status messages suppressed
-;;               (let ((url-show-status nil))
-;; 		(url-copy-file mp3-url output-file t))
-
-;;               ;; Play the file if it exists
-;;               (if (file-exists-p output-file)
-;;                   (progn
-;;                     (message "Playing %s %s..." book input)
-;;                     (if (fboundp 'emms-play-file)
-;; 			(progn
-;; 			  (require 'emms)
-;; 			  ;; (let ((emms-player-list-1 emms-player-list))
-;;                           (emms-play-file output-file))
-;;                       (start-process "mplayer" nil "mplayer" output-file)))
-;; 		(progn
-;; 		  (message "Failed to download audio for %s %s" book input))
-;; 		(message "No audio found for %s %s" book input))))))))
 
 (provide 'bible-gateway)
 ;;; bible-gateway.el ends here
