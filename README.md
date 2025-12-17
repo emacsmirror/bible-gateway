@@ -60,7 +60,7 @@ src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gatew
 
 #### Usage for playing the audio of a chapter with EMMS
 
-Not available anymore due to Copyright
+Not available anymore due to Copyright.
 
 
 ------
@@ -139,11 +139,12 @@ Alternatively, clone the repository from GitHub and install `bible-gateway.el` w
 <!-- CONFIGURATION -->
 ## Configuration & Usage
 
-The BibleGateway website in the UK, EU, and EEA has very
-limited features and the Verse of the Day API is no longer available.
-Please use the `bible-gateway-get-verse-in-eu` function instead of
-`bible-gateway-get-verse` in the examples below if you're in
-the EU/EEA/UK.
+<!-- API is back in EU/UK/EEA -->
+<!-- The BibleGateway website in the UK, EU, and EEA has very -->
+<!-- limited features and the Verse of the Day API is no longer available. -->
+<!-- Please use the `bible-gateway-get-verse-in-eu` function instead of -->
+<!-- `bible-gateway-get-verse` in the examples below if you're in -->
+<!-- the EU/EEA/UK. -->
 
 ### `*scratch*` buffer message
 
@@ -158,7 +159,6 @@ buffer message, use the following configuration in your `init.el`:
 		(string-join
 		 (mapcar (lambda (line) (concat ";;; " line))
 			 (split-string (bible-gateway-get-verse) "\n"))
-			 ;; If you're in EU, use (split-string (bible-gateway-get-verse-in-eu) "\n"))
 		 "\n")
 		"\n;;;\n")))
 ```
@@ -194,7 +194,6 @@ Additionally, here is a minimal `init.el` to add the verse of the day to your `e
   :after dashboard
   :config
   (setq dashboard-footer-messages (list (bible-gateway-get-verse))))
-  ;; If you're in EU, use (setq dashboard-footer-messages (list (bible-gateway-get-verse-in-eu))))
 
 (provide 'init)
 ;;; init.el ends here
@@ -210,7 +209,6 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
   :after dashboard
   :config
   (let ((verse (bible-gateway-get-verse)))
-  ;; If you're in EU, use (let ((verse (bible-gateway-get-verse-in-eu)))
     (setq dashboard-footer-messages (list verse))
     (setq initial-scratch-message
 	  (concat ";;; *scratch* ;;;\n\n"
@@ -225,8 +223,6 @@ To use the verse of the day both as a `*scratch*` message and as a footer in the
 
 If you're using `doom-dashboard`, the following snippet from a Reddit
 comment should do the trick.  
-Replace `bible-gateway-get-verse` with `bible-gateway-get-verse-in-eu`
-if you're in the EU.
 
 ``` commonlisp
 (use-package bible-gateway
@@ -248,17 +244,17 @@ Hit `RET` in the end to view the content. Set the user option
 exclude it.  
 
 
-### Listen to the selected chapter in your Browser Tab
+### Listen to a Bible chapter in your Browser
 
 To open the audio link for the selected chapter in your browser from Emacs,
-invoke `M-x bible-gateway-listen-passage-in-browser`, start typing the Bible book and autocomplete with
+invoke `M-x bible-gateway-listen-passage`, start typing the Bible book and autocomplete with
 `TAB`. Hit `RET` once the book is selected and enter the chapter number.
 After hitting `RET` again, switch to your browser and click Play to listen to the chapter.
 Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true) above to see how it works. Note that this is
 available only for the KJV translation.  
 
 
-### Listen to the selected chapter in Emacs using EMMS
+### Listen a Bible chapter in Emacs using EMMS
 
 Due to Copyright, this feature is not available anymore.
 

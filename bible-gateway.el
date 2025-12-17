@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.3
+;; Package-Version: 1.4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -32,17 +32,12 @@
 ;; `bible-gateway-get-verse' fetches the verse of the day for use as
 ;; an emacs-dashboard footer or a scratch buffer message.
 ;;
-;; `bible-gateway-get-verse-in-eu' is similar to
-;; `bible-gateway-get-verse' but scrapes the verse of the day from the
-;; BibleGateway website for users in EU where the API is not
-;; accessible.
-;;
-;; `bible-gateway-get-passage' fetches a specific passage and inserts
+;; M-x `bible-gateway-get-passage' fetches a Bible passage and inserts
 ;; it at point. It can be called both interactively from M-x or
 ;; programmatically with the book name and verse(s) as arguments.
 ;;
-;; M-x `bible-gateway-listen-passage-in-browser' plays a specific
-;; audio chapter in the browser.
+;; M-x `bible-gateway-listen-passage' plays a Bible chapter from KJV
+;; Zondervan Audio in the browser.
 
 ;;; Code:
 
@@ -197,10 +192,48 @@ but have everlasting life."
   "List of Bible books (UKR version) with their number of chapters.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                           Caching Mechanism                                ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar bible-gateway-cache-dir
+  (locate-user-emacs-file ".cache/bible-gateway/")
+  "Directory where bible-gateway cache file is stored.")
+
+(defvar bible-gateway-cache-file
+  (expand-file-name "bible-gateway-votd" bible-gateway-cache-dir)
+  "File path for the verse of the day cache.")
+
+(defun bible-gateway--ensure-cache-dir ()
+  "Ensure that the cache directory exists."
+  (unless (file-exists-p bible-gateway-cache-dir)
+    (make-directory bible-gateway-cache-dir t)))
+
+(defun bible-gateway--save-cache (data date)
+  "Save the DATA (formatted string) and DATE to the cache file."
+  (bible-gateway--ensure-cache-dir)
+  (with-temp-file bible-gateway-cache-file
+    (let ((print-length nil)
+          (print-level nil))
+      (insert ";; Bible Gateway Verse of the Day Cache\n")
+      (pp `(:date ,date :data ,data) (current-buffer)))))
+
+(defun bible-gateway--read-cache ()
+  "Read and return the cached plist (:date :data).
+Returns nil if the cache file does not exist or is invalid."
+  (when (file-exists-p bible-gateway-cache-file)
+    (condition-case nil
+        (with-temp-buffer
+          (insert-file-contents bible-gateway-cache-file)
+          (goto-char (point-min))
+          (read (current-buffer)))
+      (error nil))))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                     Package Section I: Fetch the Verse of The Day          ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun bible-gateway-justify-line (line width)
+(defun bible-gateway--justify-line (line width)
   "Justify LINE to WIDTH characters."
   (let* ((words (split-string line))
          (word-count (length words)))
@@ -224,7 +257,7 @@ but have everlasting life."
                          ?\s))))
         (concat result (car (last words)))))))
 
-(defun bible-gateway-format-verse-text (text &optional width)
+(defun bible-gateway--format-verse (text &optional width)
   "Format verse TEXT as a justified paragraph with optional WIDTH."
   (when text  ; Only process if text is not nil
     (with-temp-buffer
@@ -246,13 +279,13 @@ but have everlasting life."
         (let* ((justified-lines
                 (append
                  (mapcar (lambda (line)
-                           (bible-gateway-justify-line line fill-column))
+                           (bible-gateway--justify-line line fill-column))
                          (butlast lines))
                  (last lines)))
                (result (string-join justified-lines "\n")))
           result)))))
 
-(defun bible-gateway-decode-html-entities (text)
+(defun bible-gateway--decode-html (text)
   "Decode HTML entities in TEXT, including numeric character references."
   (when text
     (let ((entity-map '(("&ldquo;" . "\"")
@@ -281,48 +314,57 @@ but have everlasting life."
       ;; Return the decoded text
       text)))
 
-(defun bible-gateway-fetch-daily-bible-verse ()
-  "Fetch the daily Bible verse from BibleGateway API."
+(defun bible-gateway--fetch-votd ()
+  "Fetch the daily Bible verse using the BibleGateway API.
+If the API is unavailable (e.g., geo-blocked), falls back to scraping.
+If scraping also fails, returns the fallback verse."
   (let ((url-request-method "GET")
-        (url (concat "https://www.biblegateway.com/votd/get/?format=json&version=" bible-gateway-bible-version)))
+        (url (concat "https://www.biblegateway.com/votd/get/?format=json&version=" bible-gateway-bible-version))
+        (fallback-result (format "%s\n%s"
+                                 (bible-gateway--format-verse bible-gateway-fallback-verse)
+                                 (let ((ref-text bible-gateway-fallback-reference))
+                                   (concat (make-string (- bible-gateway-text-width (length ref-text)) ?\s)
+                                           ref-text)))))
     (condition-case nil
         (with-current-buffer (url-retrieve-synchronously url t t bible-gateway-request-timeout)
           (goto-char (point-min))
           (when (search-forward "\n\n" nil t)
-            (let* ((json-string (buffer-substring-no-properties (point) (point-max)))
-                   (json-object-type 'hash-table)
-                   (json-array-type 'list)
-                   (json-key-type 'string)
-                   (json-data (json-read-from-string json-string))
-                   (votd (gethash "votd" json-data))
-                   (raw-text (gethash "text" votd))
-                   (verse-text (bible-gateway-decode-html-entities raw-text))
-                   (clean-verse (replace-regexp-in-string "[\"]" "" verse-text))
-                   (formatted-verse (bible-gateway-format-verse-text clean-verse))
-                   (verse-reference (gethash "display_ref" votd))
-                   (fill-width bible-gateway-text-width))
-              (format "%s\n%s"
-                      formatted-verse
-                      (let ((ref-text verse-reference))
-                        (concat (make-string (- fill-width (length ref-text)) ?\s)
-                                ref-text))))))
+            (let ((response-body (buffer-substring-no-properties (point) (point-max))))
+              ;; Check if API returned "Content Unavailable" HTML instead of JSON
+              (if (or (string-match-p "<title>Content Unavailable</title>" response-body)
+                      (string-match-p "^\\s-*<" response-body))  ; Response starts with HTML tag
+                  ;; API unavailable, try scraping
+                  (condition-case nil
+                      (bible-gateway--scrape-votd)
+                    (error
+                     (message "BibleGateway API and scraping unavailable, using fallback verse.")
+                     fallback-result))
+                ;; API returned JSON, process it
+                (let* ((json-object-type 'hash-table)
+                       (json-array-type 'list)
+                       (json-key-type 'string)
+                       (json-data (json-read-from-string response-body))
+                       (votd (gethash "votd" json-data))
+                       (raw-text (gethash "text" votd))
+                       (verse-text (bible-gateway--decode-html raw-text))
+                       (clean-verse (replace-regexp-in-string "[\"]" "" verse-text))
+                       (formatted-verse (bible-gateway--format-verse clean-verse))
+                       (verse-reference (gethash "display_ref" votd))
+                       (fill-width bible-gateway-text-width))
+                  (format "%s\n%s"
+                          formatted-verse
+                          (let ((ref-text verse-reference))
+                            (concat (make-string (- fill-width (length ref-text)) ?\s)
+                                    ref-text))))))))
       (error
-       (message "%s\n%s"
-                (bible-gateway-format-verse-text bible-gateway-fallback-verse)
-                (let ((ref-text bible-gateway-fallback-reference))
-                  (concat (make-string (- bible-gateway-text-width (length ref-text)) ?\s)
-                          ref-text)))))))
+       ;; Network error or timeout, try scraping first
+       (condition-case nil
+           (bible-gateway--scrape-votd)
+         (error
+          (message "BibleGateway unreachable, using fallback verse.")
+          fallback-result))))))
 
-;;;###autoload
-(defun bible-gateway-get-verse ()
-  "Get the daily verse and handle errors."
-  (condition-case err
-      (bible-gateway-fetch-daily-bible-verse)
-    (error
-     (message "Failed to fetch the verse of the day! Error: %s)" (error-message-string err)))))
-
-;;;###autoload
-(defun bible-gateway-get-verse-in-eu ()
+(defun bible-gateway--scrape-votd ()
   "Fetch the Verse of the Day by scraping BibleGateway.
 Returns a single formatted string without verse numbers nor reference."
   (condition-case _err
@@ -379,7 +421,7 @@ Returns a single formatted string without verse numbers nor reference."
                      (joined (string-trim joined)))
 
                 ;; 6. Final format with your existing formatter.
-                (let* ((formatted (bible-gateway-format-verse-text joined))
+                (let* ((formatted (bible-gateway--format-verse joined))
                        (ref-text (format "%s (%s)" citation bible-gateway-bible-version))
                        (fill-width bible-gateway-text-width)
                        (aligned-ref (concat (make-string (max 0 (- fill-width (length ref-text))) ?\s)
@@ -387,18 +429,53 @@ Returns a single formatted string without verse numbers nor reference."
                   (format "%s\n%s" formatted aligned-ref)))))))
     (error
      ;; Fallback verse.
-     (let* ((formatted (bible-gateway-format-verse-text bible-gateway-fallback-verse))
+     (let* ((formatted (bible-gateway--format-verse bible-gateway-fallback-verse))
             (ref-text bible-gateway-fallback-reference)
             (aligned-ref (concat (make-string (max 0 (- bible-gateway-text-width (length ref-text))) ?\s)
                                  ref-text)))
        (format "%s\n%s" formatted aligned-ref)))))
 
 
+;;;###autoload
+(defun bible-gateway-get-verse ()
+  "Get the verse of the day.
+Checks the cache first. If the cache is from today, returns the cached
+string. Otherwise, fetches the verse from BibleGateway, updates the
+cache ONLY if successful, and returns the verse."
+  (let* ((today (format-time-string "%Y-%m-%d"))
+         (cached-item (bible-gateway--read-cache))
+         (cached-date (plist-get cached-item :date)))
+
+    (if (string= today cached-date)
+        ;; Cache Hit: Return the stored formatted string
+        (plist-get cached-item :data)
+
+      ;; Cache Miss: Fetch
+      (let ((result (bible-gateway--fetch-votd)))
+        ;; Check if result is the fallback verse (formatted). We
+        ;; construct the fallback string exactly as the original
+        ;; function does to compare.
+        (let ((fallback-string (format
+				"%s\n%s" (bible-gateway--format-verse
+					  bible-gateway-fallback-verse)
+				(let ((ref-text bible-gateway-fallback-reference))
+				  (concat (make-string (- bible-gateway-text-width
+							  (length ref-text)) ?\s)
+					  ref-text)))))
+
+          ;; Only save to cache if it is NOT the fallback verse
+          (unless (string= result fallback-string)
+            (bible-gateway--save-cache result today))
+
+          ;; Return the result (whether real or fallback)
+          result)))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                     Package section II - Fetch a Bible Passage             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun bible-gateway-read-book ()
+(defun bible-gateway--prompt-book ()
   "Read a Bible book name with completion based on selected Bible version."
   (completing-read
    "Select a Book: "
@@ -416,22 +493,7 @@ Returns a single formatted string without verse numbers nor reference."
                  (t bible-gateway-bible-books-kjv)))
    nil t))
 
-(defun bible-gateway-get-chapter-count (book version)
-  "Get the number of chapters for BOOK in the given VERSION."
-  (let ((books-list (cond ((string= version "KJV")
-                           bible-gateway-bible-books-kjv)
-                          ((string= version "LSG")
-                           bible-gateway-bible-books-lsg)
-                          ((string= version "RVA")
-                           bible-gateway-bible-books-rva)
-			  ((string= version "ALB")
-                           bible-gateway-bible-books-alb)
-                          ((string= version "UKR")
-                           bible-gateway-bible-books-ukr)
-                          (t bible-gateway-bible-books-kjv))))
-    (cdr (assoc book books-list))))
-
-(defun bible-gateway-read-chapter-verse (book)
+(defun bible-gateway--prompt-chapter-verse (book)
   "Read chapter and verse for BOOK."
   (let* ((books-list (cond ((string= bible-gateway-bible-version "KJV")
                             bible-gateway-bible-books-kjv)
@@ -451,9 +513,9 @@ Returns a single formatted string without verse numbers nor reference."
                   (format "Select passage from %s (1-%d): " book max-chapters))))
       (format "%s %s" book input))))
 
-(defun bible-gateway-process-verse-text (text)
+(defun bible-gateway--process-verse-text (text)
   "Process verse TEXT.
-Handling special cases like small-caps LORD and UTF-8 encoding."
+Handling special cases like small-caps LORD or JESUS and UTF-8 encoding."
   (let ((processed-text text))
     ;; First decode UTF-8 octal sequences
     (setq processed-text
@@ -467,6 +529,14 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
            "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>"
            "LORD"
            processed-text t))
+
+    ;; Replace small-caps span with "JESUS"
+    (setq processed-text
+          (replace-regexp-in-string
+           "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Jesus\\)</span>"
+           "JESUS"
+           processed-text t))
+
 
     ;; Remove "Read full chapter" text
     (setq processed-text
@@ -485,12 +555,12 @@ Handling special cases like small-caps LORD and UTF-8 encoding."
           (replace-regexp-in-string "\\\\302\\\\240" " " processed-text))
 
     ;; Decode HTML entities (if any remain)
-    (setq processed-text (bible-gateway-decode-html-entities processed-text))
+    (setq processed-text (bible-gateway--decode-html processed-text))
 
     ;; Trim whitespace and return
     (string-trim processed-text)))
 
-(defun bible-gateway-wrap-verse-text (verse-text)
+(defun bible-gateway--wrap-verse-text (verse-text)
   "Wrap VERSE-TEXT according to window width with 4 spaces for wrapped lines."
   (with-temp-buffer
     (insert verse-text)
@@ -508,10 +578,10 @@ If neither, prompt for both."
   (interactive)
   (let* ((book-supplied (and book (not (string-empty-p book))))
          (passage-supplied (and passage (not (string-empty-p passage))))
-         (chosen-book (if book-supplied book (bible-gateway-read-book)))
+         (chosen-book (if book-supplied book (bible-gateway--prompt-book)))
          (chosen-passage (if passage-supplied
                              passage
-                           (bible-gateway-read-chapter-verse chosen-book)))
+                           (bible-gateway--prompt-chapter-verse chosen-book)))
          (search-string (if passage-supplied
                             (concat chosen-book
 				    (replace-regexp-in-string " " "" chosen-passage))
@@ -571,9 +641,9 @@ If neither, prompt for both."
                                (verse-content
 				(buffer-substring-no-properties verse-start verse-end))
 			       ;; First process the verse text normally
-                               (verse-text (bible-gateway-process-verse-text verse-content))
+                               (verse-text (bible-gateway--process-verse-text verse-content))
 			       ;; Then wrap it with proper formatting
-			       (final-text (bible-gateway-wrap-verse-text verse-text)))
+			       (final-text (bible-gateway--wrap-verse-text verse-text)))
 			  (when (not (string-empty-p final-text))
 			    (push (format "%s.%s%s" verse-num
 					  (if (< (string-to-number verse-num) 10) "  " " ")
@@ -592,7 +662,7 @@ Please double-check that the chapter and verse numbers are valid."))))))
        (message "Error while fetching the passage: %s" (error-message-string err))))))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                    Package Section III - Play Audio chapter                ;
+;;   Package Section III - Play Bible chapter from KJV Dramatized Audio       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (defconst bible-gateway-bible-books-osis
@@ -621,20 +691,19 @@ Please double-check that the chapter and verse numbers are valid."))))))
     ("3 John" . "3John") ("Jude" . "Jude") ("Revelation" . "Rev"))
   "Mapping of Bible book names to their OSIS abbreviations for audio links.")
 
-(defun bible-gateway-get-audio-link (book chapter)
-  "Generate and open BibleGateway audio link for BOOK CHAPTER and optional VERSE."
+(defun bible-gateway--get-audio-link (book chapter)
+  "Generate and open BibleGateway audio link for CHAPTER from BOOK."
   (let* ((osis-code (cdr (assoc book bible-gateway-bible-books-osis)))
          (version (downcase bible-gateway-bible-version))
          (base-url "https://www.biblegateway.com/audio/dramatized")
          (url (if osis-code
                   (format "%s/%s/%s.%d" base-url version osis-code chapter)
 		(error "Unknown book: %s" book))))
-    ;; Return URL for display
     url))
 
 ;;;###autoload
-(defun bible-gateway-listen-passage-in-browser ()
-  "Open a browser tab to listen the requested chapter."
+(defun bible-gateway-listen-passage ()
+  "Prompt for a Bible chapter and play KJV Dramatized Audio in the browser."
   (interactive)
   (let* ((books-list (cond ((string= bible-gateway-bible-version "KJV")
                             bible-gateway-bible-books-kjv)
@@ -643,7 +712,8 @@ Please double-check that the chapter and verse numbers are valid."))))))
          (max-chapters (cdr (assoc book books-list)))
          (input (read-string
                  (format "Select Chapter from %s (1-%d): " book max-chapters)))
-         (audio-link (bible-gateway-get-audio-link book (string-to-number input))))
+         (audio-link (bible-gateway--get-audio-link book
+						    (string-to-number input))))
     (browse-url audio-link)
     ;; More detailed message with the specific chapter being opened
     (message "Switch to your browser and click Play to listen %s %s (KJV)."
