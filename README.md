@@ -17,7 +17,9 @@
 <p align="center">
   <h3 align="center">bible-gateway: A BibleGateway client for Emacs</h3>  
   <p align="center">
-    <b>bible-gateway</b> is a simple Emacs package that fetches the verse of the day, as well as any requested verse, passage, and chapter in both text and audio format from https://BibleGateway.com
+    <b>bible-gateway</b> is a simple Emacs package that fetches the
+    verse of the day from https://biblegateway.com, inserts Bible
+    passages at point, and opens audio chapters in your web browser.
     <br />
   </p>
 </p>
@@ -25,40 +27,44 @@
 ------
 
 **Features:**
-- Fetches the verse of the day for use as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer or `*scratch*` buffer message.
-- Retrieves and inserts at point a requested verse, passage, or chapter.
-- Provides autocompletion for Bible books and offers hints about available chapters.
-- Supports various Bible translations available in different languages
-  from the public domain, such as KJV (English), LSG (French), RVA
-  (Spanish), ALB (Albanian), UKR (Ukrainian), ...
-- Allows users to request a Bible chapter and opens a browser tab
-  with the selected chapter's audio from the [Zondervan King James
-  Audio Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
+- Fetches the verse of the day for use as an
+  [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard)
+  footer or `*scratch*` buffer message.
+- Retrieves and inserts at point a requested verse, passage, or
+  chapter(s).
+- Provides autocompletion for Bible books and offers hints about
+  available chapters.
+- Supports various public domain Bible translations, including KJV
+  (English), LSG (French), RVA (Spanish), ALB (Albanian), UKR
+  (Ukrainian), ...
+- Prompts for a Bible chapter and plays the audio chapter from the
+  [Zondervan King James Audio
+  Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
 - 
 
 ------
 
-#### Usage as an [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer
+#### Displaying the Verse of the Day in [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard)
 
 <img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/dashboard-dark.png?raw=true">
 
 <img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/dashboard-light.png?raw=true">
 
-#### Usage as a `*scratch*` buffer message
+#### Displaying the Verse of the Day in the `*scratch*` Buffer
 
 <img src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/scratch-dark.png?raw=true">
 
-#### Usage for inserting a Bible passage at point
+#### Inserting a Bible Passage at Point
 
 <img
 src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-get-passage.gif?raw=true">
 
-#### Usage for playing the audio of a chapter in the browser
+#### Playing a Bible Chapter in the Browser
 
 <img
 src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true">
 
-#### Usage for playing the audio of a chapter with EMMS
+#### Playing a Bible Chapter with EMMS
 
 Not available anymore due to Copyright.
 
@@ -122,7 +128,7 @@ To fetch the package directly from source you can use
 `*scratch*` buffer and `yank` the following line:
 
 ``` commonlisp
-(package-vc-install '(bible-gateway :vc-backend Git :url  "https://github.com/kristjoc/bible-gateway"))
+(package-vc-install "https://github.com/kristjoc/bible-gateway")
 ```
 
 Hit `C-x C-e` once you move the cursor to the last parenthesis. For Emacs 30, you can use the
@@ -130,7 +136,7 @@ new `:vc` keyword of `use-package` as follows:
 
 ``` commonlisp
 (use-package bible-gateway
-  :vc (:url "https://github.com/kristjoc/bible-gateway")) ; For Emacs>=30
+  :vc "https://github.com/kristjoc/bible-gateway") ; For Emacs>=30
 ```
 
 Alternatively, clone the repository from GitHub and install `bible-gateway.el` with `M-x package-install-file`.
@@ -138,13 +144,6 @@ Alternatively, clone the repository from GitHub and install `bible-gateway.el` w
 
 <!-- CONFIGURATION -->
 ## Configuration & Usage
-
-<!-- API is back in EU/UK/EEA -->
-<!-- The BibleGateway website in the UK, EU, and EEA has very -->
-<!-- limited features and the Verse of the Day API is no longer available. -->
-<!-- Please use the `bible-gateway-get-verse-in-eu` function instead of -->
-<!-- `bible-gateway-get-verse` in the examples below if you're in -->
-<!-- the EU/EEA/UK. -->
 
 ### `*scratch*` buffer message
 
