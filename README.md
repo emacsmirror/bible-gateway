@@ -19,7 +19,7 @@
   <p align="center">
     <b>bible-gateway</b> is a simple Emacs package that fetches the
     verse of the day from https://biblegateway.com, inserts Bible
-    passages at point, and opens audio chapters in your web browser.
+    passages at point, and opens audio chapters in your browser.
     <br />
   </p>
 </p>

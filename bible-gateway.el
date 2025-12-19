@@ -44,6 +44,7 @@
 
 (require 'url)
 (require 'json)
+(require 'cl-lib)
 
 (defgroup bible-gateway nil
   "Package that fetches the Bible verse of the day from BibleGateway."
@@ -497,43 +498,27 @@ cache ONLY if successful, and returns the verse."
 (defun bible-gateway--process-verse-text (text)
   "Process verse TEXT.
 Handling special cases like small-caps LORD or JESUS and UTF-8 encoding."
-  ;; First decode UTF-8 octal sequences
   (let ((decoded-text (decode-coding-string
                        (encode-coding-string text 'utf-8)
                        'utf-8)))
     (with-temp-buffer
       (insert decoded-text)
-      (goto-char (point-min))
-
-      ;; Replace small-caps span with "LORD"
-      (while (re-search-forward "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>" nil t)
-        (replace-match "LORD" t t))
-      (goto-char (point-min))
-
-      ;; Replace small-caps span with "JESUS"
-      (while (re-search-forward "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Jesus\\)</span>" nil t)
-        (replace-match "JESUS" t t))
-      (goto-char (point-min))
-
-      ;; Remove "Read full chapter" text
-      (while (re-search-forward "Read full chapter.*$" nil t)
-        (replace-match "" t t))
-      (goto-char (point-min))
-
-      ;; Remove trailing span IDs and div tags
-      (while (re-search-forward "\\(<span id=\"[^\"]*\".*\\|</div.*\\)$" nil t)
-        (replace-match "" t t))
-      (goto-char (point-min))
-
-      ;; Remove any remaining HTML tags
-      (while (re-search-forward "<[^>]+>" nil t)
-        (replace-match "" t t))
-      (goto-char (point-min))
-
-      ;; Fix non-breaking space
-      (while (re-search-forward "\\\\302\\\\240" nil t)
-        (replace-match " " t t))
-
+      (cl-flet ((replace-all (pattern replacement)
+                  (goto-char (point-min))
+                  (while (re-search-forward pattern nil t)
+                    (replace-match replacement t t))))
+        ;; Replace small-caps Lord with "LORD"
+        (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>" "LORD")
+        ;; Replace small-caps span with "JESUS"
+        (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Jesus\\)</span>" "JESUS")
+        ;; Remove "Read full chapter" text
+        (replace-all "Read full chapter.*$" "")
+        ;; Remove trailing span IDs and div tags
+        (replace-all "\\(<span id=\"[^\"]*\".*\\|</div.*\\)$" "")
+        ;; Remove any remaining HTML tags
+        (replace-all "<[^>]+>" "")
+        ;; Fix non-breaking space
+        (replace-all "\\\\302\\\\240" " "))
       ;; Decode HTML entities (if any remain) and trim
       (string-trim (bible-gateway--decode-html (buffer-string))))))
 
