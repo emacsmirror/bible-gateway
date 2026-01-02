@@ -56,8 +56,9 @@
 
 (defcustom bible-gateway-bible-version "KJV"
   "The Bible version, default KJV.
-Other supported versions, which are available in the Public domain, are
-LSG in French, RVA in Spanish, ALB in Albanian, and UKR in Ukrainian."
+Other supported versions, which are available in the Public Domain, are
+LSG in French, RVA in Spanish, ALB in Albanian, UKR in Ukrainian, and
+LUTH1545 in German."
   :type 'string)
 
 (defcustom bible-gateway-text-width 80
@@ -186,6 +187,27 @@ but have everlasting life."
     ("Якова" . 5) ("1 Петра" . 5) ("2 Петра" . 3) ("1 Івана" . 5)
     ("2 Івана" . 1) ("3 Івана" . 1) ("Юда" . 1) ("Об'явлення" . 22))
   "List of Bible books (UKR version) with their number of chapters.")
+
+(defconst bible-gateway-bible-books-luth1545
+  '(("1 Mose" . 50) ("2 Mose" . 40) ("3 Mose" . 27) ("4 Mose" . 36)
+    ("5 Mose" . 34) ("Josua" . 24) ("Richter" . 21) ("Rut" . 4)
+    ("1 Samuel" . 31) ("2 Samuel" . 24) ("1 Koenige" . 22) ("2 Koenige" . 25)
+    ("1 Chronik" . 29) ("2 Chronik" . 36) ("Esra" . 10) ("Nehemia" . 13)
+    ("Ester" . 10) ("Hiob" . 42) ("Psalm" . 150) ("Sprueche" . 31)
+    ("Prediger" . 12) ("Hohelied" . 8) ("Jesaja" . 66) ("Jeremia" . 52)
+    ("Klagelieder" . 5) ("Hesekiel" . 48) ("Daniel" . 12) ("Hosea" . 14)
+    ("Joel" . 3) ("Amos" . 9) ("Obadja" . 1) ("Jona" . 4) ("Mica" . 7)
+    ("Nahum" . 3) ("Habakuk" . 3) ("Zephanja" . 3) ("Hagai" . 2)
+    ("Sacharja" . 14) ("Maleachi" . 4) ("Matthaeus" . 28) ("Markus" . 16)
+    ("Lukas" . 24) ("Johannes" . 21) ("Apostelgeschichte" . 28) ("Roemer" . 16)
+    ("1 Korinther" . 16) ("2 Korinther" . 13) ("Galater" . 6)
+    ("Epheser" . 6) ("Philipper" . 4) ("Kolosser" . 4)
+    ("1 Thessalonicher" . 5) ("2 Thessalonicher" . 3) ("1 Timotheus" . 6)
+    ("2 Timotheus" . 4) ("Titus" . 3) ("Philemon" . 1) ("Hebraeer" . 13)
+    ("Jakobus" . 5) ("1 Petrus" . 5) ("2 Petrus" . 3) ("1 Johannes" . 5)
+    ("2 Johannes" . 1) ("3 Johannes" . 1) ("Judas" . 1) ("Offenbarung" . 22))
+  "List of Bible books (Luther Bibel 1545 version) with their number of chapters.")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                           Caching Mechanism                                ;
@@ -316,6 +338,8 @@ If scraping also fails, returns the fallback verse."
                                            ref-text)))))
     (condition-case nil
         (with-current-buffer (url-retrieve-synchronously url t t bible-gateway-request-timeout)
+	  (set-buffer-multibyte t)
+	  (decode-coding-region (point-min) (point-max) 'utf-8)
           (goto-char (point-min))
           (when (search-forward "\n\n" nil t)
             (let ((response-body (buffer-substring-no-properties (point) (point-max))))
@@ -361,6 +385,8 @@ Returns a single formatted string without verse numbers nor reference."
             citation book passage)
         ;; 1. Retrieve homepage and extract citation.
         (with-current-buffer (url-retrieve-synchronously url t t bible-gateway-request-timeout)
+	  (set-buffer-multibyte t)
+	  (decode-coding-region (point-min) (point-max) 'utf-8)
           (goto-char (point-min))
           (when (re-search-forward "<span class=\"citation\">\\([^<]+\\)</span>" nil t)
             (setq citation (match-string 1))))
@@ -476,6 +502,7 @@ cache ONLY if successful, and returns the verse."
 	     ("RVA" bible-gateway-bible-books-rva)
 	     ("ALB" bible-gateway-bible-books-alb)
 	     ("UKR" bible-gateway-bible-books-ukr)
+	     ("LUTH1545" bible-gateway-bible-books-luth1545)
 	     (_ bible-gateway-bible-books-kjv)))
    nil t))
 
@@ -487,6 +514,7 @@ cache ONLY if successful, and returns the verse."
 		       ("RVA" bible-gateway-bible-books-rva)
 		       ("ALB" bible-gateway-bible-books-alb)
 		       ("UKR" bible-gateway-bible-books-ukr)
+		       ("LUTH1545" bible-gateway-bible-books-luth1545)
 		       (_ bible-gateway-bible-books-kjv)))
          (max-chapters (cdr (assoc book books-list))))
     (unless max-chapters
@@ -498,29 +526,30 @@ cache ONLY if successful, and returns the verse."
 (defun bible-gateway--process-verse-text (text)
   "Process verse TEXT.
 Handling special cases like small-caps LORD or JESUS and UTF-8 encoding."
-  (let ((decoded-text (decode-coding-string
-                       (encode-coding-string text 'utf-8)
-                       'utf-8)))
-    (with-temp-buffer
-      (insert decoded-text)
-      (cl-flet ((replace-all (pattern replacement)
-                  (goto-char (point-min))
-                  (while (re-search-forward pattern nil t)
-                    (replace-match replacement t t))))
-        ;; Replace small-caps Lord with "LORD"
-        (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>" "LORD")
-        ;; Replace small-caps span with "JESUS"
-        (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Jesus\\)</span>" "JESUS")
-        ;; Remove "Read full chapter" text
-        (replace-all "Read full chapter.*$" "")
-        ;; Remove trailing span IDs and div tags
-        (replace-all "\\(<span id=\"[^\"]*\".*\\|</div.*\\)$" "")
-        ;; Remove any remaining HTML tags
-        (replace-all "<[^>]+>" "")
-        ;; Fix non-breaking space
-        (replace-all "\\\\302\\\\240" " "))
-      ;; Decode HTML entities (if any remain) and trim
-      (string-trim (bible-gateway--decode-html (buffer-string))))))
+  (with-temp-buffer
+    (insert text)
+    (cl-flet ((replace-all (pattern replacement)
+                (goto-char (point-min))
+                (while (re-search-forward pattern nil t)
+                  (replace-match replacement t t))))
+      ;; Replace small-caps Lord with "LORD"
+      (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Lord\\)</span>" "LORD")
+      ;; Replace small-caps span with "JESUS"
+      (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Jesus\\)</span>" "JESUS")
+      ;; Remove "Read full chapter" text
+      (replace-all "Read full chapter.*$" "")
+      ;; Remove empty span tags (like <span class="text Rev-22-21"></span>)
+      (replace-all "<span[^>]*>\\s-*</span>" "")
+      ;; Remove trailing span IDs and div tags
+      (replace-all "\\(<span id=\"[^\"]*\".*\\|</div.*\\)$" "")
+      ;; Remove incomplete HTML tags at the end (like <span without >)
+      (replace-all "<[^>]*$" "")
+      ;; Remove any remaining HTML tags
+      (replace-all "<[^>]+>" "")
+      ;; Fix non-breaking space
+      (replace-all "\\\\302\\\\240" " "))
+    ;; Decode HTML entities (if any remain) and trim
+    (string-trim (bible-gateway--decode-html (buffer-string)))))
 
 (defun bible-gateway--wrap-verse-text (verse-text)
   "Wrap VERSE-TEXT according to window width with 4 spaces for wrapped lines."
@@ -555,6 +584,8 @@ If neither, prompt for both."
 	(let ((original-buffer (current-buffer)))
 	  (with-current-buffer
 	      (url-retrieve-synchronously url t t bible-gateway-request-timeout)
+	    (set-buffer-multibyte t)
+	    (decode-coding-region (point-min) (point-max) 'utf-8)
             (goto-char (point-min))
 
 	    ;; First get the title if required

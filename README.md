@@ -15,7 +15,7 @@
 
 <br />
 <p align="center">
-  <h3 align="center">bible-gateway: A BibleGateway client for Emacs</h3>  
+  <h3 align="center">bible-gateway: A BibleGateway Client for Emacs</h3>  
   <p align="center">
     <b>bible-gateway</b> is a simple Emacs package that fetches the
     verse of the day from https://biblegateway.com, inserts Bible
@@ -36,7 +36,7 @@
   available chapters.
 - Supports various public domain Bible translations, including KJV
   (English), LSG (French), RVA (Spanish), ALB (Albanian), UKR
-  (Ukrainian), ...
+  (Ukrainian), LUTH1545 (German), ...
 - Prompts for a Bible chapter and plays the audio chapter from the
   [Zondervan King James Audio
   Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
@@ -144,6 +144,79 @@ Alternatively, clone the repository from GitHub and install `bible-gateway.el` w
 
 <!-- CONFIGURATION -->
 ## Configuration & Usage
+
+### Customizable Variables
+
+`bible-gateway` is customizable via the following `bible-gateway-*`
+customization variables:
+
+#### `bible-gateway-bible-version`
+
+**Type:** string  
+**Default:** `"KJV"`
+
+The Bible version/translation to use when fetching verses and passages. The following public domain translations are supported:
+- `"KJV"` - King James Version (English)
+- `"LSG"` - Louis Segond (French)
+- `"RVA"` - Reina Valera Antigua (Spanish)
+- `"ALB"` - Albanian Bible
+- `"UKR"` - Ukrainian Bible
+- `"LUTH1545"` - Luther Bible 1545 (German)
+
+#### `bible-gateway-text-width`
+
+**Type:** natnum (positive integer)  
+**Default:** `80`
+
+The width in characters for formatting the verse of the day text body.
+
+#### `bible-gateway-fallback-verse`
+
+**Type:** string  
+**Default:** `"For God so loved the world, that he gave his only begotten Son, that whosoever believeth in him should not perish, but have everlasting life."`
+
+The fallback verse text to display when the online request to BibleGateway fails (e.g., due to network issues or geo-blocking).
+
+**Example:**
+```commonlisp
+(setq bible-gateway-fallback-verse "In the beginning God created the heaven and the earth.")
+```
+
+#### `bible-gateway-fallback-reference`
+
+**Type:** string  
+**Default:** `"John 3:16"`
+
+The reference citation for the fallback verse.  This should correspond to the verse set in `bible-gateway-fallback-verse`.
+
+**Example:**
+```commonlisp
+(setq bible-gateway-fallback-reference "Genesis 1:1")
+```
+
+#### `bible-gateway-request-timeout`
+
+**Type:** integer  
+**Default:** `3`
+
+The timeout in seconds for HTTP requests to BibleGateway. If a request
+takes longer than this duration, it will fail and use the fallback
+verse.
+
+**Example:**
+```commonlisp
+(setq bible-gateway-request-timeout 5)  ; Wait up to 5 seconds
+```
+
+#### `bible-gateway-include-ref`
+
+**Type:** boolean  
+**Default:** `t`
+
+When non-nil, include the reference citation (e.g., "John 3 (KJV)")
+when inserting Bible passages with `bible-gateway-get-passage`. Set to
+`nil` to insert only the passage text without the reference.
+
 
 ### `*scratch*` buffer message
 
