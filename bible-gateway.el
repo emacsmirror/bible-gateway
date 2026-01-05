@@ -1,12 +1,12 @@
 ;;; bible-gateway.el --- A Simple BibleGateway Client -*- lexical-binding: t -*-
 
-;; Copyright (C) 2025 Kristjon Ciko
+;; Copyright (C) 2026 Kristjon Ciko
 
 ;; Author: Kristjon Ciko
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.4
+;; Package-Version: 1.5
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -57,8 +57,8 @@
 (defcustom bible-gateway-bible-version "KJV"
   "The Bible version, default KJV.
 Other supported versions, which are available in the Public Domain, are
-LSG in French, RVA in Spanish, ALB in Albanian, UKR in Ukrainian, and
-LUTH1545 in German."
+LSG in French, RVA in Spanish, ALB in Albanian, UKR in Ukrainian, RUSV
+in Russian, and LUTH1545 in German."
   :type 'string)
 
 (defcustom bible-gateway-text-width 80
@@ -188,6 +188,26 @@ but have everlasting life."
     ("2 Івана" . 1) ("3 Івана" . 1) ("Юда" . 1) ("Об'явлення" . 22))
   "List of Bible books (UKR version) with their number of chapters.")
 
+(defconst bible-gateway-bible-books-rusv
+  '(("Бытие" . 50) ("Исход" . 40) ("Левит" . 27) ("Числа" . 36)
+    ("Второзаконие" . 34) ("Иисус Навин" . 24) ("Книга Судей" . 21) ("Руфь" . 4)
+    ("1-я Царств" . 31) ("2-я Царств" . 24) ("3-я Царств" . 22) ("4-я Царств" . 25)
+    ("1-я Паралипоменон" . 29) ("2-я Паралипоменон" . 36) ("Ездра" . 10) ("Неемия" . 13)
+    ("Есфирь" . 10) ("Иов" . 42) ("Псалтирь" . 150) ("Притчи" . 31)
+    ("Екклесиаст" . 12) ("Песни Песней" . 8) ("Исаия" . 66) ("Иеремия" . 52)
+    ("Плач Иеремии" . 5) ("Иезекииль" . 48) ("Даниил" . 12) ("Осия" . 14)
+    ("Иоиль" . 3) ("Амос" . 9) ("Авдия" . 1) ("Иона" . 4) ("Михей" . 7)
+    ("Наум" . 3) ("Аввакум" . 3) ("Софония" . 3) ("Аггей" . 2)
+    ("Захария" . 14) ("Малахия" . 4) ("От Матфея" . 28) ("От Марка" . 16)
+    ("От Луки" . 24) ("От Иоанна" . 21) ("Деяния" . 28) ("К Римлянам" . 16)
+    ("1-е Коринфянам" . 16) ("2-е Коринфянам" . 13) ("К Галатам" . 6)
+    ("К Ефесянам" . 6) ("К Филиппийцам" . 4) ("К Колоссянам" . 4)
+    ("1-е Фессалоникийцам" . 5) ("2-е Фессалоникийцам" . 3) ("1-е Тимофею" . 6)
+    ("2-е Тимофею" . 4) ("К Титу" . 3) ("К Филимону" . 1) ("К Евреям" . 13)
+    ("Иакова" . 5) ("1-e Петра" . 5) ("2-e Петра" . 3) ("1-e Иоанна" . 5)
+    ("2-e Иоанна" . 1) ("3-e Иоанна" . 1) ("Иуда" . 1) ("Откровение" . 22))
+  "List of Bible books (RUSV version) with their number of chapters.")
+
 (defconst bible-gateway-bible-books-luth1545
   '(("1 Mose" . 50) ("2 Mose" . 40) ("3 Mose" . 27) ("4 Mose" . 36)
     ("5 Mose" . 34) ("Josua" . 24) ("Richter" . 21) ("Rut" . 4)
@@ -307,23 +327,27 @@ Returns nil if the cache file does not exist or is invalid."
   "Decode HTML entities in TEXT, including numeric character references."
   (when text
     (let ((entity-map '(("&ldquo;" . "\"")
-			("&rdquo;" . "\"")
-			("&#8212;" . "--")
-			("&#8217;" . "'")
-			("&#8220;" . "\"")
-			("&#8221;" . "\"")
-			("&quot;" . "\"")
-			("&apos;" . "'")
-			("&lt;" . "<")
-			("&gt;" . ">")
-			("&nbsp;" . " ")
-			("&amp;" . "&") ; Decode &amp; first
-			("&#039;" . "'")))) ; Decode numeric entities like &#039; after &amp;
-      (replace-regexp-in-string "&\\(#?[a-z0-9]+\\);"
-				(lambda (match)
-				  (or (alist-get match entity-map nil nil #'string-equal-ignore-case)
-				      (char-to-string (string-to-number (match-string 1 match)))))
-				text))))
+                        ("&rdquo;" .  "\"")
+                        ("&#8212;" . "—")
+                        ("&#8217;" . "'")
+                        ("&#8220;" . "\"")
+                        ("&#8221;" . "\"")
+                        ("&quot;" . "\"")
+                        ("&apos;" .  "'")
+                        ("&lt;" . "<")
+                        ("&gt;" . ">")
+                        ("&nbsp;" . " ")
+                        ("&amp;" . "&"))))
+      (replace-regexp-in-string
+       "&#\\([0-9]+\\);"
+       (lambda (match)
+	 (char-to-string (string-to-number (match-string 1 match))))
+       (replace-regexp-in-string
+	"&[a-z]+;"
+	(lambda (match)
+	  (or (alist-get match entity-map nil nil #'string=)
+	      match))
+	text)))))
 
 (defun bible-gateway--fetch-votd ()
   "Fetch the daily Bible verse using the BibleGateway API.
@@ -337,15 +361,14 @@ If scraping also fails, returns the fallback verse."
                                    (concat (make-string (- bible-gateway-text-width (length ref-text)) ?\s)
                                            ref-text)))))
     (condition-case nil
-        (with-current-buffer (url-retrieve-synchronously url t t bible-gateway-request-timeout)
-	  (set-buffer-multibyte t)
-	  (decode-coding-region (point-min) (point-max) 'utf-8)
-          (goto-char (point-min))
-          (when (search-forward "\n\n" nil t)
-            (let ((response-body (buffer-substring-no-properties (point) (point-max))))
+	(with-current-buffer (let ((url-mime-charset-string "utf-8"))
+			       (url-retrieve-synchronously url t t bible-gateway-request-timeout))
+	  (goto-char (point-min))
+	  (when (search-forward "\n\n" nil t)
+	    (let ((response-body (buffer-substring-no-properties (point) (point-max))))
               ;; Check if API returned "Content Unavailable" HTML instead of JSON
-              (if (or (string-match-p "<title>Content Unavailable</title>" response-body)
-                      (string-match-p "^\\s-*<" response-body))  ; Response starts with HTML tag
+	      (if (or (string-match-p "<title>Content Unavailable</title>" response-body)
+		      (not (string-match-p "^\\s-*{" response-body)))
                   ;; API unavailable, try scraping
                   (condition-case nil
                       (bible-gateway--scrape-votd)
@@ -353,10 +376,7 @@ If scraping also fails, returns the fallback verse."
                      (message "BibleGateway API and scraping unavailable, using fallback verse.")
                      fallback-result))
                 ;; API returned JSON, process it
-                (let* ((json-object-type 'hash-table)
-                       (json-array-type 'list)
-                       (json-key-type 'string)
-                       (json-data (json-read-from-string response-body))
+                (let* ((json-data (json-parse-string response-body :object-type 'hash-table))
                        (votd (gethash "votd" json-data))
                        (raw-text (gethash "text" votd))
                        (verse-text (bible-gateway--decode-html raw-text))
@@ -502,6 +522,7 @@ cache ONLY if successful, and returns the verse."
 	     ("RVA" bible-gateway-bible-books-rva)
 	     ("ALB" bible-gateway-bible-books-alb)
 	     ("UKR" bible-gateway-bible-books-ukr)
+	     ("RUSV" bible-gateway-bible-books-rusv)
 	     ("LUTH1545" bible-gateway-bible-books-luth1545)
 	     (_ bible-gateway-bible-books-kjv)))
    nil t))
@@ -514,6 +535,7 @@ cache ONLY if successful, and returns the verse."
 		       ("RVA" bible-gateway-bible-books-rva)
 		       ("ALB" bible-gateway-bible-books-alb)
 		       ("UKR" bible-gateway-bible-books-ukr)
+		       ("RUSV" bible-gateway-bible-books-rusv)
 		       ("LUTH1545" bible-gateway-bible-books-luth1545)
 		       (_ bible-gateway-bible-books-kjv)))
          (max-chapters (cdr (assoc book books-list))))
