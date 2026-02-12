@@ -58,7 +58,7 @@
   "The Bible version, default KJV.
 Other supported versions, which are available in the Public Domain, are
 LSG in French, RVA in Spanish, ALB in Albanian, UKR in Ukrainian, RUSV
-in Russian, and LUTH1545 in German."
+in Russian, LUTH1545 in German, and DNB1930 in Norwegian."
   :type 'string)
 
 (defcustom bible-gateway-text-width 80
@@ -228,6 +228,26 @@ but have everlasting life."
     ("2 Johannes" . 1) ("3 Johannes" . 1) ("Judas" . 1) ("Offenbarung" . 22))
   "List of Bible books (Luther Bibel 1545 version) with their number of chapters.")
 
+(defconst bible-gateway-bible-books-dnb1930
+  '(("1 Mosebok" . 50) ("2 Mosebok" . 40) ("3 Mosebok" . 27) ("4 Mosebok" . 36)
+    ("5 Mosebok" . 34) ("Josvas" . 24) ("Dommernes" . 21) ("Ruts" . 4)
+    ("1 Samuels" . 31) ("2 Samuel" . 24) ("1 Kongebok" . 22) ("2 Kongebok" . 25)
+    ("1 Krønikebok" . 29) ("2 Krønikebok" . 36) ("Esras" . 10) ("Nehemias" . 13)
+    ("Esters" . 10) ("Jobs" . 42) ("Salmenes" . 150) ("Salomos Ordsprog" . 31)
+    ("Predikerens" . 12) ("Salomos Høisang" . 8) ("Esaias" . 66) ("Jeremias" . 52)
+    ("Klagesangene" . 5) ("Esekiel" . 48) ("Daniel" . 12) ("Hoseas" . 14)
+    ("Joel" . 3) ("Amos" . 9) ("Obadias" . 1) ("Jonas" . 4) ("Mika" . 7)
+    ("Nahum" . 3) ("Habakuk" . 3) ("Sefanias" . 3) ("Haggai" . 2)
+    ("Sakarias" . 14) ("Malakias" . 4) ("Matteus" . 28) ("Markus" . 16)
+    ("Lukas" . 24) ("Johannes" . 21) ("Apostlenesgjerninge" . 28) ("Romerne" . 16)
+    ("1 Korintierne" . 16) ("2 Korintierne" . 13) ("Galaterne" . 6)
+    ("Efeserne" . 6) ("Filippenserne" . 4) ("Kolossenserne" . 4)
+    ("1 Tessalonikerne" . 5) ("2 Tessalonikerne" . 3) ("1 Timoteus" . 6)
+    ("2 Timoteus" . 4) ("Titus" . 3) ("Filemon" . 1) ("Hebreerne" . 13)
+    ("Jakobs" . 5) ("1 Peters" . 5) ("2 Peters" . 3) ("1 Johannes" . 5)
+    ("2 Johannes" . 1) ("3 Johannes" . 1) ("Judas" . 1) ("Apenbaring" . 22))
+  "List of Bible books (Det Norsk Bibelselskap 1930 version) with their number of chapters.")
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                           Caching Mechanism                                ;
@@ -253,7 +273,7 @@ but have everlasting life."
     (let ((print-length nil)
           (print-level nil))
       (insert ";; Bible Gateway Verse of the Day Cache\n")
-      (prin1 `(:date ,date :data ,data) (current-buffer)))))
+  (prin1 `(:date ,date :data ,data) (current-buffer)))))
 
 (defun bible-gateway--read-cache ()
   "Read and return the cached plist (:date :data).
@@ -524,6 +544,7 @@ cache ONLY if successful, and returns the verse."
 	     ("UKR" bible-gateway-bible-books-ukr)
 	     ("RUSV" bible-gateway-bible-books-rusv)
 	     ("LUTH1545" bible-gateway-bible-books-luth1545)
+	     ("DNB1930" bible-gateway-bible-books-dnb1930)
 	     (_ bible-gateway-bible-books-kjv)))
    nil t))
 
@@ -537,6 +558,7 @@ cache ONLY if successful, and returns the verse."
 		       ("UKR" bible-gateway-bible-books-ukr)
 		       ("RUSV" bible-gateway-bible-books-rusv)
 		       ("LUTH1545" bible-gateway-bible-books-luth1545)
+		       ("DNB1930" bible-gateway-bible-books-dnb1930)
 		       (_ bible-gateway-bible-books-kjv)))
          (max-chapters (cdr (assoc book books-list))))
     (unless max-chapters
@@ -560,6 +582,8 @@ Handling special cases like small-caps LORD or JESUS and UTF-8 encoding."
       (replace-all "<span style=\"font-variant: small-caps\" class=\"small-caps\">\\(Jesus\\)</span>" "JESUS")
       ;; Remove "Read full chapter" text
       (replace-all "Read full chapter.*$" "")
+      ;; Remove inline footnote markers (e.g., <sup class='footnote' ...>[a]</sup>)
+      (replace-all "<sup[^>]*class='footnote'[^>]*>\\(.\\|\n\\)*?</sup>" "")
       ;; Remove empty span tags (like <span class="text Rev-22-21"></span>)
       (replace-all "<span[^>]*>\\s-*</span>" "")
       ;; Remove trailing span IDs and div tags
@@ -641,6 +665,11 @@ If neither, prompt for both."
                     (setq raw-content
 			  (replace-regexp-in-string
 			   "<sup class=\"versenum\">[^<]*</sup>" "" raw-content))
+
+		    ;; Remove footnotes section (entire block at the end)
+                    (setq raw-content
+                          (replace-regexp-in-string
+                           "<div class=\"footnotes\">\\(.\\|\n\\)*" "" raw-content))
 
                     ;; Break the content into individual verse spans for processing
                     (with-temp-buffer
