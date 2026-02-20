@@ -19,7 +19,8 @@
   <p align="center">
     <b>bible-gateway</b> is a simple Emacs package that fetches the
     verse of the day from https://biblegateway.com, inserts Bible
-    passages at point, and opens audio chapters in your browser.
+    passages at point, opens audio chapters in your browser, and searches
+	for keywords displaying the results in Emacs.
     <br />
   </p>
 </p>
@@ -40,6 +41,9 @@
 - Prompts for a Bible chapter and plays the audio chapter from the
   [Zondervan King James Audio
   Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
+- Prompts for a keyword to search BibleGateway and displays
+  the results in an Emacs buffer with clickable references and
+  pagination.
 - 
 
 ------
@@ -68,6 +72,11 @@ src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gatew
 
 Not available anymore due to Copyright.
 
+#### Search for a Keyword in BibleGateway and Display Results in Emacs
+
+<img
+src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-search.gif?raw=true">
+
 
 ------
 
@@ -92,12 +101,12 @@ Not available anymore due to Copyright.
 ## Introduction
 
 bible-gateway is a simple Emacs package that fetches content from
-[BibleGateway](https://www.biblegateway.com/). It retrieves data from
-the BibleGateway API in JSON format and formats the text and
-references accordingly. In addition to fetching the verse of the day,
-it can also insert any requested Bible verse, passage, or chapter at
-the current point in the buffer. The package also supports playing
-audio chapters directly in a browser tab.  
+[BibleGateway](https://www.biblegateway.com/). It retrieves data from the
+BibleGateway API in JSON format and formats the text and references accordingly.
+In addition to fetching the verse of the day, it can also insert any requested
+Bible verse, passage, or chapter at the current point in the buffer. The package
+also supports playing audio chapters directly in a browser tab and searching for
+a keyword in BibleGateway displaying the results in Emacs.  
 
 
 <!-- INSTALLATION -->
@@ -337,7 +346,20 @@ downloading them to a temporary directory and playing using EMMS is
 not permitted, according to HarperCollins Christian Publishing. The
 audio content is protected by copyright law and is intended for
 streaming through authorized platforms only. Please, use the Browser
-Tab feature for Bible Audio.
+Tab feature for Bible Audio.  
+
+### Search for a keyword in BibleGateway
+
+To search for a keyword in BibleGateway and display the results in Emacs, invoke
+`M-x bible-gateway-search`, enter the desired keyword, and hit `RET`. The search
+results will be displayed in a new Emacs buffer with clickable references and
+pagination links at the bottom of the buffer.
+
+Click or press RET on a reference to view the passage in context. Press `n/p` to
+navigate between results, `N/P` to navigate between pages, and `q` to close the
+buffer. Check out the
+[demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-search.gif?raw=true)
+above to see how it works.
 
 And that's it! God bless you! Have a great day! :-)
 
