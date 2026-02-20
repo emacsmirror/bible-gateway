@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.5
+;; Package-Version: 1.6
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -23,9 +23,14 @@
 
 ;;; Commentary:
 
-;; bible-gateway is a simple package that fetches the verse of the
-;; day, as well as any requested verse, passage, and chapter in both
-;; text and audio format from https://BibleGateway.com
+;; bible-gateway is a simple package that fetches content from
+;; BibleGateway.com. It can:
+;;
+;; - Fetch and display the Bible verse of the day
+;; - Insert Bible passages/chapters at point
+;; - Open audio chapters in your browser
+;; - Search the Bible by keyword and display results in a dedicated buffer with
+;;   clickable references and pagination
 ;;
 ;; Usage:
 ;;
@@ -39,6 +44,9 @@
 ;;
 ;; M-x `bible-gateway-listen-passage' plays a Bible chapter from KJV
 ;; Zondervan Audio in the browser.
+;;
+;; M-x `bible-gateway-search' prompts for a search query, fetches results
+;; from BibleGateway, and displays them in a dedicated buffer.
 
 ;;; Code:
 
@@ -84,6 +92,10 @@ but have everlasting life."
   "If non-nil, print the reference (e.g., \"John 3 (KJV)\") with the passage."
   :type 'boolean)
 
+(defcustom bible-gateway-search-results-per-page 100
+  "Maximum number of search results to fetch per query."
+  :type 'natnum)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                     Bible books in supported languages                     ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -94,12 +106,12 @@ but have everlasting life."
     ("1 Samuel" . 31) ("2 Samuel" . 24) ("1 Kings" . 22) ("2 Kings" . 25)
     ("1 Chronicles" . 29) ("2 Chronicles" . 36) ("Ezra" . 10) ("Nehemiah" . 13)
     ("Esther" . 10) ("Job" . 42) ("Psalms" . 150) ("Proverbs" . 31)
-    ("Ecclesiastes" . 12) ("Song of Solomon" . 8) ("Isaiah" . 66) ("Jeremiah" . 52)
-    ("Lamentations" . 5) ("Ezekiel" . 48) ("Daniel" . 12) ("Hosea" . 14)
-    ("Joel" . 3) ("Amos" . 9) ("Obadiah" . 1) ("Jonah" . 4) ("Micah" . 7)
-    ("Nahum" . 3) ("Habakkuk" . 3) ("Zephaniah" . 3) ("Haggai" . 2)
-    ("Zechariah" . 14) ("Malachi" . 4) ("Matthew" . 28) ("Mark" . 16)
-    ("Luke" . 24) ("John" . 21) ("Acts" . 28) ("Romans" . 16)
+    ("Ecclesiastes" . 12) ("Song of Solomon" . 8) ("Isaiah" . 66)
+    ("Jeremiah" . 52) ("Lamentations" . 5) ("Ezekiel" . 48) ("Daniel" . 12)
+    ("Hosea" . 14) ("Joel" . 3) ("Amos" . 9) ("Obadiah" . 1) ("Jonah" . 4)
+    ("Micah" . 7) ("Nahum" . 3) ("Habakkuk" . 3) ("Zephaniah" . 3)
+    ("Haggai" . 2) ("Zechariah" . 14) ("Malachi" . 4) ("Matthew" . 28)
+    ("Mark" . 16) ("Luke" . 24) ("John" . 21) ("Acts" . 28) ("Romans" . 16)
     ("1 Corinthians" . 16) ("2 Corinthians" . 13) ("Galatians" . 6)
     ("Ephesians" . 6) ("Philippians" . 4) ("Colossians" . 4)
     ("1 Thessalonians" . 5) ("2 Thessalonians" . 3) ("1 Timothy" . 6)
@@ -114,10 +126,10 @@ but have everlasting life."
     ("1 Samuel" . 31) ("2 Samuel" . 24) ("1 Rois" . 22) ("2 Rois" . 25)
     ("1 Chroniques" . 29) ("2 Chroniques" . 36) ("Esdras" . 10) ("Néhémie" . 13)
     ("Esther" . 10) ("Job" . 42) ("Psaumes" . 150) ("Proverbes" . 31)
-    ("Ecclésiaste" . 12) ("Cantique des Cantiques" . 8) ("Ésaïe" . 66) ("Jérémie" . 52)
-    ("Lamentations" . 5) ("Ézéchiel" . 48) ("Daniel" . 12) ("Osée" . 14)
-    ("Joël" . 3) ("Amos" . 9) ("Abdias" . 1) ("Jonas" . 4) ("Michée" . 7)
-    ("Nahum" . 3) ("Habacuc" . 3) ("Sophonie" . 3) ("Aggée" . 2)
+    ("Ecclésiaste" . 12) ("Cantique des Cantiques" . 8) ("Ésaïe" . 66)
+    ("Jérémie" . 52) ("Lamentations" . 5) ("Ézéchiel" . 48) ("Daniel" . 12)
+    ("Osée" . 14) ("Joël" . 3) ("Amos" . 9) ("Abdias" . 1) ("Jonas" . 4)
+    ("Michée" . 7) ("Nahum" . 3) ("Habacuc" . 3) ("Sophonie" . 3) ("Aggée" . 2)
     ("Zacharie" . 14) ("Malachie" . 4) ("Matthieu" . 28) ("Marc" . 16)
     ("Luc" . 24) ("Jean" . 21) ("Actes" . 28) ("Romains" . 16)
     ("1 Corinthiens" . 16) ("2 Corinthiens" . 13) ("Galates" . 6)
@@ -151,21 +163,22 @@ but have everlasting life."
 (defconst bible-gateway-bible-books-alb
   '(("Zanafilla" . 50) ("Eksodi" . 40) ("Levitiku" . 27) ("Numrat" . 36)
     ("Ligji i Përtërirë" . 34) ("Jozueu" . 24) ("Gjyqtarët" . 21) ("Ruthi" . 4)
-    ("1 i Samuelit" . 31) ("2 i Samuelit" . 24) ("1 i Mbretërve" . 22) ("2 i Mbretërve" . 25)
-    ("1 i Kronikave" . 29) ("2 i Kronikave" . 36) ("Esdra" . 10) ("Nehemia" . 13)
-    ("Ester" . 10) ("Jobi" . 42) ("Psalmet" . 150) ("Fjalët e urta" . 31)
-    ("Predikuesi" . 12) ("Kantiku i Kantikëve" . 8) ("Isaia" . 66) ("Jeremia" . 52)
-    ("Vajtimet" . 5) ("Ezekieli" . 48) ("Danieli" . 12) ("Osea" . 14)
-    ("Joeli" . 3) ("Amosi" . 9) ("Abdia" . 1) ("Jona" . 4) ("Mikea" . 7)
-    ("Nahumi" . 3) ("Habakuku" . 3) ("Sofonia" . 3) ("Hagai" . 2)
-    ("Zakaria" . 14) ("Malakia" . 4) ("Mateu" . 28) ("Marku" . 16)
-    ("Luka" . 24) ("Gjoni" . 21) ("Veprat e Apostujve" . 28) ("Romakëve" . 16)
-    ("1 e Korintasve" . 16) ("2 e Korintasve" . 13) ("Galatasve" . 6)
-    ("Efesianëve" . 6) ("Filipianëve" . 4) ("Kolosianëve" . 4)
-    ("1 Thesalonikasve" . 5) ("2 Thesalonikasve" . 3) ("1 Timoteut" . 6)
-    ("2 Timoteut" . 4) ("Titi" . 3) ("Filemonit" . 1) ("Hebrenjve" . 13)
-    ("Jakobit" . 5) ("1 Pjetrit" . 5) ("2 Pjetrit" . 3) ("1 Gjonit" . 5)
-    ("2 Gjonit" . 1) ("3 Gjonit" . 1) ("Juda" . 1) ("Zbulesa" . 22))
+    ("1 i Samuelit" . 31) ("2 i Samuelit" . 24) ("1 i Mbretërve" . 22)
+    ("2 i Mbretërve" . 25) ("1 i Kronikave" . 29) ("2 i Kronikave" . 36)
+    ("Esdra" . 10) ("Nehemia" . 13) ("Ester" . 10) ("Jobi" . 42)
+    ("Psalmet" . 150) ("Fjalët e urta" . 31) ("Predikuesi" . 12)
+    ("Kantiku i Kantikëve" . 8) ("Isaia" . 66) ("Jeremia" . 52) ("Vajtimet" . 5)
+    ("Ezekieli" . 48) ("Danieli" . 12) ("Osea" . 14) ("Joeli" . 3) ("Amosi" . 9)
+    ("Abdia" . 1) ("Jona" . 4) ("Mikea" . 7) ("Nahumi" . 3) ("Habakuku" . 3)
+    ("Sofonia" . 3) ("Hagai" . 2) ("Zakaria" . 14) ("Malakia" . 4)
+    ("Mateu" . 28) ("Marku" . 16) ("Luka" . 24) ("Gjoni" . 21)
+    ("Veprat e Apostujve" . 28) ("Romakëve" . 16) ("1 e Korintasve" . 16)
+    ("2 e Korintasve" . 13) ("Galatasve" . 6) ("Efesianëve" . 6)
+    ("Filipianëve" . 4) ("Kolosianëve" . 4) ("1 Thesalonikasve" . 5)
+    ("2 Thesalonikasve" . 3) ("1 Timoteut" . 6) ("2 Timoteut" . 4)
+    ("Titi" . 3) ("Filemonit" . 1) ("Hebrenjve" . 13) ("Jakobit" . 5)
+    ("1 Pjetrit" . 5) ("2 Pjetrit" . 3) ("1 Gjonit" . 5) ("2 Gjonit" . 1)
+    ("3 Gjonit" . 1) ("Juda" . 1) ("Zbulesa" . 22))
   "List of Bible books (ALB version) with their number of chapters.")
 
 (defconst bible-gateway-bible-books-ukr
@@ -191,21 +204,22 @@ but have everlasting life."
 (defconst bible-gateway-bible-books-rusv
   '(("Бытие" . 50) ("Исход" . 40) ("Левит" . 27) ("Числа" . 36)
     ("Второзаконие" . 34) ("Иисус Навин" . 24) ("Книга Судей" . 21) ("Руфь" . 4)
-    ("1-я Царств" . 31) ("2-я Царств" . 24) ("3-я Царств" . 22) ("4-я Царств" . 25)
-    ("1-я Паралипоменон" . 29) ("2-я Паралипоменон" . 36) ("Ездра" . 10) ("Неемия" . 13)
-    ("Есфирь" . 10) ("Иов" . 42) ("Псалтирь" . 150) ("Притчи" . 31)
-    ("Екклесиаст" . 12) ("Песни Песней" . 8) ("Исаия" . 66) ("Иеремия" . 52)
-    ("Плач Иеремии" . 5) ("Иезекииль" . 48) ("Даниил" . 12) ("Осия" . 14)
-    ("Иоиль" . 3) ("Амос" . 9) ("Авдия" . 1) ("Иона" . 4) ("Михей" . 7)
-    ("Наум" . 3) ("Аввакум" . 3) ("Софония" . 3) ("Аггей" . 2)
-    ("Захария" . 14) ("Малахия" . 4) ("От Матфея" . 28) ("От Марка" . 16)
-    ("От Луки" . 24) ("От Иоанна" . 21) ("Деяния" . 28) ("К Римлянам" . 16)
-    ("1-е Коринфянам" . 16) ("2-е Коринфянам" . 13) ("К Галатам" . 6)
-    ("К Ефесянам" . 6) ("К Филиппийцам" . 4) ("К Колоссянам" . 4)
-    ("1-е Фессалоникийцам" . 5) ("2-е Фессалоникийцам" . 3) ("1-е Тимофею" . 6)
-    ("2-е Тимофею" . 4) ("К Титу" . 3) ("К Филимону" . 1) ("К Евреям" . 13)
-    ("Иакова" . 5) ("1-e Петра" . 5) ("2-e Петра" . 3) ("1-e Иоанна" . 5)
-    ("2-e Иоанна" . 1) ("3-e Иоанна" . 1) ("Иуда" . 1) ("Откровение" . 22))
+    ("1-я Царств" . 31) ("2-я Царств" . 24) ("3-я Царств" . 22)
+    ("4-я Царств" . 25) ("1-я Паралипоменон" . 29) ("2-я Паралипоменон" . 36)
+    ("Ездра" . 10) ("Неемия" . 13) ("Есфирь" . 10) ("Иов" . 42)
+    ("Псалтирь" . 150) ("Притчи" . 31) ("Екклесиаст" . 12) ("Песни Песней" . 8)
+    ("Исаия" . 66) ("Иеремия" . 52) ("Плач Иеремии" . 5) ("Иезекииль" . 48)
+    ("Даниил" . 12) ("Осия" . 14) ("Иоиль" . 3) ("Амос" . 9) ("Авдия" . 1)
+    ("Иона" . 4) ("Михей" . 7) ("Наум" . 3) ("Аввакум" . 3) ("Софония" . 3)
+    ("Аггей" . 2) ("Захария" . 14) ("Малахия" . 4) ("От Матфея" . 28)
+    ("От Марка" . 16) ("От Луки" . 24) ("От Иоанна" . 21) ("Деяния" . 28)
+    ("К Римлянам" . 16) ("1-е Коринфянам" . 16) ("2-е Коринфянам" . 13)
+    ("К Галатам" . 6) ("К Ефесянам" . 6) ("К Филиппийцам" . 4)
+    ("К Колоссянам" . 4) ("1-е Фессалоникийцам" . 5) ("2-е Фессалоникийцам" . 3)
+    ("1-е Тимофею" . 6) ("2-е Тимофею" . 4) ("К Титу" . 3) ("К Филимону" . 1)
+    ("К Евреям" . 13) ("Иакова" . 5) ("1-e Петра" . 5) ("2-e Петра" . 3)
+    ("1-e Иоанна" . 5) ("2-e Иоанна" . 1) ("3-e Иоанна" . 1) ("Иуда" . 1)
+    ("Откровение" . 22))
   "List of Bible books (RUSV version) with their number of chapters.")
 
 (defconst bible-gateway-bible-books-luth1545
@@ -226,7 +240,7 @@ but have everlasting life."
     ("2 Timotheus" . 4) ("Titus" . 3) ("Philemon" . 1) ("Hebraeer" . 13)
     ("Jakobus" . 5) ("1 Petrus" . 5) ("2 Petrus" . 3) ("1 Johannes" . 5)
     ("2 Johannes" . 1) ("3 Johannes" . 1) ("Judas" . 1) ("Offenbarung" . 22))
-  "List of Bible books (Luther Bibel 1545 version) with their number of chapters.")
+  "List of Bible books (LUTH1545 version) with their number of chapters.")
 
 (defconst bible-gateway-bible-books-dnb1930
   '(("1 Mosebok" . 50) ("2 Mosebok" . 40) ("3 Mosebok" . 27) ("4 Mosebok" . 36)
@@ -246,8 +260,18 @@ but have everlasting life."
     ("2 Timoteus" . 4) ("Titus" . 3) ("Filemon" . 1) ("Hebreerne" . 13)
     ("Jakobs" . 5) ("1 Peters" . 5) ("2 Peters" . 3) ("1 Johannes" . 5)
     ("2 Johannes" . 1) ("3 Johannes" . 1) ("Judas" . 1) ("Apenbaring" . 22))
-  "List of Bible books (Det Norsk Bibelselskap 1930 version) with their number of chapters.")
+  "List of Bible books (DNB1930 version) with their number of chapters.")
 
+(defconst bible-gateway-version-names
+  '(("KJV" . "King James Version")
+    ("LSG" . "Louis Segond")
+    ("RVA" . "Reina-Valera Antigua")
+    ("ALB" . "Albanian Bible")
+    ("UKR" . "Ukrainian Bible")
+    ("RUSV" . "Russian Synodal Version")
+    ("LUTH1545" . "Luther Bible 1545")
+    ("DNB1930" . "Det Norsk Bibelselskap 1930"))
+  "Mapping of Bible version codes to their full names.")
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                           Caching Mechanism                                ;
@@ -762,6 +786,437 @@ Please double-check that the chapter and verse numbers are valid."))))))
     ;; More detailed message with the specific chapter being opened
     (message "Switch to your browser and click Play to listen %s %s (KJV)."
              book input)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;       Package Section IV - Search the Bible by Keyword                     ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defvar bible-gateway-search-buffer-name "*Bible Gateway Search*"
+  "Name of the buffer used to display Bible search results.")
+
+(defvar bible-gateway-passage-buffer-name "*Bible Gateway Passage*"
+  "Name of the buffer used to display a passage from search results.")
+
+(defun bible-gateway--build-search-url (keyword &optional start)
+  "Build the BibleGateway quicksearch URL for KEYWORD.
+Optional START is the result offset for pagination (default 0)."
+  (concat "https://www.biblegateway.com/quicksearch/?qs_version="
+	  (url-encode-url bible-gateway-bible-version)
+	  "&quicksearch="
+	  (url-encode-url keyword)
+	  "&resultspp="
+	  (number-to-string bible-gateway-search-results-per-page)
+	  "&startnumber="
+	  (number-to-string (1+ (or start 0)))))
+
+(defun bible-gateway--strip-search-html (text)
+  "Strip HTML from search result TEXT, keeping only the plain content."
+  (with-temp-buffer
+    (insert text)
+    ;; Remove the bible-item-extras div and its contents
+    (goto-char (point-min))
+    (while (re-search-forward
+	    "<div class=\"bible-item-extras\">\\(.\\|\n\\)*?</div>" nil t)
+      (replace-match ""))
+    ;; Replace small-caps Lord with "LORD" (may contain <b> inside)
+    (goto-char (point-min))
+    (while (re-search-forward
+	    "<span class=\"small-caps\"[^>]*>\\(?:<b>\\)?\\(Lord\\)\\(?:</b>\\)?</span>" nil t)
+      (replace-match "LORD"))
+    ;; Replace small-caps Jesus with "JESUS" (may contain <b> inside)
+    (goto-char (point-min))
+    (while (re-search-forward
+	    "<span class=\"small-caps\"[^>]*>\\(?:<b>\\)?\\(Jesus\\)\\(?:</b>\\)?</span>" nil t)
+      (replace-match "JESUS"))
+    ;; Remove <b> and </b> tags but keep their content
+    (goto-char (point-min))
+    (while (re-search-forward "</?b>" nil t)
+      (replace-match ""))
+    ;; Remove all remaining HTML tags
+    (goto-char (point-min))
+    (while (re-search-forward "<[^>]+>" nil t)
+      (replace-match ""))
+    ;; Decode HTML entities
+    (let ((result (bible-gateway--decode-html (buffer-string))))
+      (string-trim (replace-regexp-in-string "\\s-+" " " result)))))
+
+(defun bible-gateway--parse-search-results (keyword &optional start)
+  "Fetch and parse BibleGateway search results for KEYWORD.
+Optional START is the result offset for pagination.
+Returns a plist (:count N :keyword KEYWORD :start S :results ((ref . text) ...))."
+  (let ((url (bible-gateway--build-search-url keyword start))
+	(count 0)
+	(results '()))
+    (condition-case err
+	(with-current-buffer
+	    (url-retrieve-synchronously url t t bible-gateway-request-timeout)
+	  (set-buffer-multibyte t)
+	  (decode-coding-region (point-min) (point-max) 'utf-8)
+
+	  ;; Extract total count from the "All (N)" filter option
+	  ;; Handles comma-separated numbers like "All (6,753)"
+	  (goto-char (point-min))
+	  (when (re-search-forward
+		 "data-display=\"All\"[^>]*>All[[:space:]]*(\\([0-9,]+\\))" nil t)
+	    (setq count (string-to-number
+			 (replace-regexp-in-string "," "" (match-string 1)))))
+
+	  ;; Fallback: try "N Results" pattern (e.g., "6,968 Results")
+	  (when (zerop count)
+	    (goto-char (point-min))
+	    (when (re-search-forward
+		   "\\([0-9,]+\\)[[:space:]]+Results" nil t)
+	      (setq count (string-to-number
+			   (replace-regexp-in-string "," "" (match-string 1))))))
+
+	  ;; Extract each search result from <li class="row bible-item">
+	  (goto-char (point-min))
+	  (while (re-search-forward
+		  "<li class=\"row bible-item\"" nil t)
+	    (let ((li-start (match-beginning 0))
+		  (li-end (save-excursion
+			    (if (re-search-forward "</li>" nil t)
+				(match-end 0)
+			      (point-max))))
+		  (ref nil)
+		  (text nil))
+	      ;; Extract reference
+	      (goto-char li-start)
+	      (when (re-search-forward
+		     "<a class=\"bible-item-title\"[^>]*>\\([^<]+\\)</a>"
+		     li-end t)
+		(setq ref (string-trim (match-string 1))))
+	      ;; Extract preview text
+	      (goto-char li-start)
+	      (when (re-search-forward
+		     "<div class=\"bible-item-text[^\"]*\">"
+		     li-end t)
+		(let ((text-start (match-end 0))
+		      (text-end (save-excursion
+				  (if (re-search-forward
+				       "</div><!-- bible-item-text -->"
+				       li-end t)
+				      (match-beginning 0)
+				    (if (re-search-forward "</div>" li-end t)
+					(match-beginning 0)
+				      li-end)))))
+		  (setq text (bible-gateway--strip-search-html
+			      (buffer-substring-no-properties
+			       text-start text-end)))))
+	      ;; Collect result
+	      (when (and ref text)
+		(push (cons ref text) results))
+	      (goto-char li-end)))
+	  (list :count count
+		:keyword keyword
+		:start (or start 0)
+		:results (nreverse results)))
+      (error
+       (message "Error fetching search results: %s" (error-message-string err))
+       (list :count 0 :keyword keyword :start (or start 0) :results nil)))))
+
+(defface bible-gateway-search-ref-face
+  '((t :inherit link :weight bold))
+  "Face for Bible references in search results."
+  :group 'bible-gateway)
+
+(defface bible-gateway-search-keyword-face
+  '((t :inherit highlight))
+  "Face for the highlighted keyword in search results."
+  :group 'bible-gateway)
+
+(defface bible-gateway-search-header-face
+  '((t :inherit font-lock-comment-face :weight bold))
+  "Face for the search results header line."
+  :group 'bible-gateway)
+
+(defun bible-gateway--highlight-keyword (text keyword)
+  "Return TEXT with all occurrences of KEYWORD highlighted."
+  (let ((result (copy-sequence text))
+	(case-fold-search t)
+	(start 0)
+	(kw-re (regexp-quote keyword)))
+    (while (string-match kw-re result start)
+      (let ((beg (match-beginning 0))
+	    (end (match-end 0)))
+	(put-text-property beg end 'face 'bible-gateway-search-keyword-face result)
+	(setq start end)))
+    result))
+
+(defun bible-gateway--wrap-search-text (text indent)
+  "Wrap TEXT with INDENT spaces for continuation lines."
+  (with-temp-buffer
+    (insert text)
+    (let ((fill-prefix (make-string indent ?\s))
+	  (fill-column (- (window-width) 5)))
+      (fill-region (point-min) (point-max))
+      (buffer-string))))
+
+(defvar-local bible-gateway-search--keyword nil
+  "The current search keyword for this search buffer.")
+
+(defvar-local bible-gateway-search--start 0
+  "The current result offset for pagination.")
+
+(defvar-local bible-gateway-search--total 0
+  "The total number of search results.")
+
+(defun bible-gateway--display-search-results (data)
+  "Display search results DATA in a dedicated buffer.
+DATA is a plist as returned by `bible-gateway--parse-search-results'."
+  (let ((buf (get-buffer-create bible-gateway-search-buffer-name))
+	(count (plist-get data :count))
+	(keyword (plist-get data :keyword))
+	(start (plist-get data :start))
+	(results (plist-get data :results))
+	(rpp bible-gateway-search-results-per-page)
+	(version-name (or (cdr (assoc bible-gateway-bible-version
+				      bible-gateway-version-names))
+			  bible-gateway-bible-version)))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+	(erase-buffer)
+
+	;; Header
+	(let* ((page-start (1+ start))
+	       (page-end (min count (+ start (length results))))
+	       (header (if (> count rpp)
+			   (format "%d Bible results for \"%s\" from %s. (showing %d-%d)"
+				   count keyword version-name page-start page-end)
+			 (format "%d Bible results for \"%s\" from %s."
+				 count keyword version-name))))
+	  (insert (propertize header 'face 'bible-gateway-search-header-face))
+	  (insert "\n\n"))
+
+	(if (null results)
+	    (insert "No results found.\n")
+
+	  (insert (propertize "Bible search results"
+			      'face 'bible-gateway-search-header-face))
+	  (insert "\n\n")
+
+	  ;; Each result
+	  (let ((i (1+ start)))
+	    (dolist (entry results)
+	      (let* ((ref (car entry))
+		     (text (cdr entry))
+		     (highlighted-text (bible-gateway--highlight-keyword
+					text keyword))
+		     (wrapped-text (bible-gateway--wrap-search-text
+				    highlighted-text 3)))
+		;; Reference as a clickable button with * prefix
+		(insert "* ")
+		(let ((ref-start (point)))
+		  (insert ref)
+		  (put-text-property ref-start (point)
+				     'face 'bible-gateway-search-ref-face)
+		  (put-text-property ref-start (point)
+				     'bible-gateway-ref ref)
+		  (put-text-property ref-start (point)
+				     'mouse-face 'highlight))
+		(insert "\n")
+		;; Preview text
+		(insert "   " wrapped-text)
+		(insert "\n\n"))
+	      (setq i (1+ i))))
+
+	  ;; Pagination footer
+	  (when (> count rpp)
+	    (let* ((current-page (1+ (/ start rpp)))
+		   (total-pages (ceiling (/ (float count) rpp)))
+		   (has-prev (> start 0))
+		   (has-next (< (+ start rpp) count))
+		   (nav-parts '()))
+	      (when has-prev (push "P: previous page" nav-parts))
+	      (when has-next (push "N: next page" nav-parts))
+	      (insert (propertize
+		       (format "— Page %d/%d — %s —"
+			       current-page total-pages
+			       (string-join (nreverse nav-parts) ", "))
+		       'face 'bible-gateway-search-header-face))
+	      (insert "\n")))))
+
+      ;; Set mode FIRST, then store state (mode kills local vars)
+      (bible-gateway-search-mode)
+      (setq bible-gateway-search--keyword keyword)
+      (setq bible-gateway-search--start start)
+      (setq bible-gateway-search--total count)
+      (goto-char (point-min)))
+    (pop-to-buffer buf)))
+
+(defun bible-gateway-search--next-page ()
+  "Fetch and display the next page of search results."
+  (interactive)
+  (let* ((rpp bible-gateway-search-results-per-page)
+	 (next-start (+ bible-gateway-search--start rpp))
+	 (total bible-gateway-search--total))
+    (if (>= next-start total)
+	(message "Already on the last page.")
+      (message "Fetching next page...")
+      (let ((data (bible-gateway--parse-search-results
+		   bible-gateway-search--keyword next-start)))
+	;; Preserve total count if the new page didn't find it
+	(when (zerop (plist-get data :count))
+	  (plist-put data :count total))
+	(bible-gateway--display-search-results data)))))
+
+(defun bible-gateway-search--prev-page ()
+  "Fetch and display the previous page of search results."
+  (interactive)
+  (if (<= bible-gateway-search--start 0)
+      (message "Already on the first page.")
+    (let* ((rpp bible-gateway-search-results-per-page)
+	   (prev-start (max 0 (- bible-gateway-search--start rpp)))
+	   (total bible-gateway-search--total))
+      (message "Fetching previous page...")
+      (let ((data (bible-gateway--parse-search-results
+		   bible-gateway-search--keyword prev-start)))
+	;; Preserve total count if the new page didn't find it
+	(when (zerop (plist-get data :count))
+	  (plist-put data :count total))
+	(bible-gateway--display-search-results data)))))
+
+(defun bible-gateway-search--prev-page ()
+  "Fetch and display the previous page of search results."
+  (interactive)
+  (if (<= bible-gateway-search--start 0)
+      (message "Already on the first page.")
+    (let* ((rpp bible-gateway-search-results-per-page)
+	   (prev-start (max 0 (- bible-gateway-search--start rpp))))
+      (message "Fetching previous page...")
+      (let ((data (bible-gateway--parse-search-results
+		   bible-gateway-search--keyword prev-start)))
+	(bible-gateway--display-search-results data)))))
+
+(defun bible-gateway-search--open-passage ()
+  "Open the Bible passage for the reference at point with context."
+  (interactive)
+  (let ((ref (get-text-property (point) 'bible-gateway-ref)))
+    ;; If not directly on a reference, search backward for one
+    (unless ref
+      (save-excursion
+	(when (re-search-backward "^\\* " nil t)
+	  (goto-char (match-end 0))
+	  (setq ref (get-text-property (point) 'bible-gateway-ref)))))
+    (if ref
+	(let* ((parts (bible-gateway--split-reference ref))
+	       (book (car parts))
+	       (passage (cdr parts))
+	       (expanded (bible-gateway--expand-verse-context passage))
+	       (buf (get-buffer-create bible-gateway-passage-buffer-name)))
+	  (message "Fetching %s %s..." book expanded)
+	  (with-current-buffer buf
+	    (let ((inhibit-read-only t))
+	      (erase-buffer)
+	      (let ((bible-gateway-include-ref t))
+		(bible-gateway-get-passage book expanded))
+	      (goto-char (point-min))
+	      (bible-gateway-passage-mode)))
+	  (display-buffer buf '(display-buffer-in-side-window
+				(side . bottom)
+				(window-height . 0.35))))
+      (message "No reference found at point."))))
+
+(defun bible-gateway-search--mouse-open-passage (event)
+  "Open the Bible passage for the reference using mouse EVENT."
+  (interactive "e")
+  (let ((pos (posn-point (event-end event))))
+    (when pos
+      (goto-char pos)
+      (bible-gateway-search--open-passage))))
+
+(defun bible-gateway--split-reference (ref)
+  "Split a Bible reference REF into (BOOK . PASSAGE).
+For example, \"1 Chronicles 5:7\" returns (\"1 Chronicles\" . \"5:7\")."
+  (if (string-match "\\(.*\\)\\s-+\\([0-9].*\\)" ref)
+      (cons (match-string 1 ref) (match-string 2 ref))
+    (cons ref "")))
+
+(defun bible-gateway--expand-verse-context (passage)
+  "Expand PASSAGE to include ±1 verse of context.
+\"5:7\" becomes \"5:6-8\", \"1:1\" becomes \"1:1-3\",
+\"5\" (whole chapter, no verse) is returned as-is."
+  (if (string-match "^\\([0-9]+\\):\\([0-9]+\\)$" passage)
+      (let* ((chapter (match-string 1 passage))
+	     (verse (string-to-number (match-string 2 passage)))
+	     (start (max 1 (1- verse)))
+	     (end (1+ verse)))
+	(format "%s:%d-%d" chapter start end))
+    ;; No verse number (whole chapter) or already a range — return as-is
+    passage))
+
+(defun bible-gateway-search--next-result ()
+  "Move to the next search result."
+  (interactive)
+  (let ((pos (point)))
+    (forward-line 1)
+    (if (re-search-forward "^\\* " nil t)
+	(goto-char (match-end 0))
+      (goto-char pos)
+      (message "No more results."))))
+
+(defun bible-gateway-search--prev-result ()
+  "Move to the previous search result."
+  (interactive)
+  (let ((pos (point)))
+    (beginning-of-line)
+    (if (re-search-backward "^\\* " nil t)
+	(goto-char (match-end 0))
+      (goto-char pos)
+      (message "No previous result."))))
+
+(defvar bible-gateway-search-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map special-mode-map)
+    (define-key map (kbd "RET") #'bible-gateway-search--open-passage)
+    (define-key map [mouse-1] #'bible-gateway-search--mouse-open-passage)
+    (define-key map (kbd "n") #'bible-gateway-search--next-result)
+    (define-key map (kbd "p") #'bible-gateway-search--prev-result)
+    (define-key map (kbd "N") #'bible-gateway-search--next-page)
+    (define-key map (kbd "P") #'bible-gateway-search--prev-page)
+    map)
+  "Keymap for `bible-gateway-search-mode'.")
+
+(define-derived-mode bible-gateway-search-mode special-mode "Bible-Search"
+  "Major mode for displaying BibleGateway search results.
+
+\\{bible-gateway-search-mode-map}"
+  :group 'bible-gateway
+  (setq-local truncate-lines nil)
+  (setq-local word-wrap t))
+
+(defvar bible-gateway-passage-mode-map
+  (let ((map (make-sparse-keymap)))
+    (set-keymap-parent map special-mode-map)
+    map)
+  "Keymap for `bible-gateway-passage-mode'.")
+
+(define-derived-mode bible-gateway-passage-mode special-mode "Bible-Passage"
+  "Major mode for displaying a Bible passage from search results.
+Press `q' to close.
+
+\\{bible-gateway-passage-mode-map}"
+  :group 'bible-gateway
+  (setq-local truncate-lines nil)
+  (setq-local word-wrap t))
+
+;;;###autoload
+(defun bible-gateway-search (keyword)
+  "Search BibleGateway for KEYWORD and display results in a buffer.
+Results are shown in a dedicated buffer with clickable references.
+Press RET on a reference to view the full passage.
+Press n/p to navigate between results.
+Press N/P to navigate between pages.
+Press q to close the buffer."
+  (interactive "sSearch the Bible for: ")
+  (when (string-empty-p (string-trim keyword))
+    (user-error "Please enter a search keyword"))
+  (message "Searching BibleGateway for \"%s\"..." keyword)
+  (let ((data (bible-gateway--parse-search-results keyword)))
+    (bible-gateway--display-search-results data)
+    (message "%d results for \"%s\"."
+	     (plist-get data :count) keyword)))
 
 
 (provide 'bible-gateway)
