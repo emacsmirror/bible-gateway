@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.6
+;; Package-Version: 1.6.1
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -262,6 +262,27 @@ but have everlasting life."
     ("2 Johannes" . 1) ("3 Johannes" . 1) ("Judas" . 1) ("Apenbaring" . 22))
   "List of Bible books (DNB1930 version) with their number of chapters.")
 
+(defconst bible-gateway-bible-books-bulg
+  '(("Битие" . 50) ("Изход" . 40) ("Левит" . 27) ("Числа" . 36)
+    ("Второзаконие" . 34) ("Исус Навиев" . 24) ("Съдии" . 21) ("Рут" . 4)
+    ("1 Царе" . 31) ("2 Царе" . 24) ("3 Царе" . 22) ("4 Царе" . 25)
+    ("1 Летописи" . 29) ("2 Летописи" . 36) ("Ездра" . 10) ("Неемия" . 13)
+    ("Естир" . 10) ("Йов" . 42) ("Псалми" . 150) ("Притчи" . 31)
+    ("Еклесиаст" . 12) ("Песен на песните" . 8) ("Исая" . 66) ("Еремия" . 52)
+    ("Плач Еремиев" . 5) ("Езекил" . 48) ("Данаил" . 12) ("Осия" . 14)
+    ("Иоил" . 3) ("Амос" . 9) ("Авдий" . 1) ("Йон" . 4) ("Михей" . 7)
+    ("Наум" . 3) ("Авакум" . 3) ("Софоний" . 3) ("Агей" . 2)
+    ("Захария" . 14) ("Малахия" . 4) ("Матей" . 28) ("Марко" . 16)
+    ("Лука" . 24) ("Йоан" . 21) ("Деяния" . 28) ("Римляни" . 16)
+    ("1 Коринтяни" . 16) ("2 Коринтяни" . 13) ("Галатяни" . 6)
+    ("Ефесяни" . 6) ("Филипяни" . 4) ("Колосяни" . 4)
+    ("1 Солунци" . 5) ("2 Солунци" . 3) ("1 Тимотей" . 6)
+    ("2 Тимотей" . 4) ("Тит" . 3) ("Филимон" . 1) ("Евреи" . 13)
+    ("Яков" . 5) ("1 Петрово" . 5) ("2 Петрово" . 3) ("1 Йоаново" . 5)
+    ("2 Йоаново" . 1) ("3 Йоаново" . 1) ("Юда" . 1) ("Откровение" . 22))
+  "List of Bible books (BULG version) with their number of chapters.")
+
+
 (defconst bible-gateway-version-names
   '(("KJV" . "King James Version")
     ("LSG" . "Louis Segond")
@@ -398,20 +419,27 @@ Returns nil if the cache file does not exist or is invalid."
 If the API is unavailable (e.g., geo-blocked), falls back to scraping.
 If scraping also fails, returns the fallback verse."
   (let ((url-request-method "GET")
-        (url (concat "https://www.biblegateway.com/votd/get/?format=json&version=" bible-gateway-bible-version))
-        (fallback-result (format "%s\n%s"
-                                 (bible-gateway--format-verse bible-gateway-fallback-verse)
-                                 (let ((ref-text bible-gateway-fallback-reference))
-                                   (concat (make-string (- bible-gateway-text-width (length ref-text)) ?\s)
-                                           ref-text)))))
+        (url (concat
+	      "https://www.biblegateway.com/votd/get/?format=json&version="
+	      bible-gateway-bible-version))
+        (fallback-result
+	 (format "%s\n%s"
+		 (bible-gateway--format-verse bible-gateway-fallback-verse)
+		 (let ((ref-text bible-gateway-fallback-reference))
+		   (concat (make-string
+			    (- bible-gateway-text-width (length ref-text)) ?\s)
+			   ref-text)))))
     (condition-case nil
 	(with-current-buffer (let ((url-mime-charset-string "utf-8"))
-			       (url-retrieve-synchronously url t t bible-gateway-request-timeout))
+			       (url-retrieve-synchronously
+				url t t bible-gateway-request-timeout))
 	  (goto-char (point-min))
 	  (when (search-forward "\n\n" nil t)
-	    (let ((response-body (buffer-substring-no-properties (point) (point-max))))
-              ;; Check if API returned "Content Unavailable" HTML instead of JSON
-	      (if (or (string-match-p "<title>Content Unavailable</title>" response-body)
+	    (let ((response-body
+		   (buffer-substring-no-properties (point) (point-max))))
+              ;; Check if API returned "Content Unavailable" instead of JSON
+	      (if (or (string-match-p "<title>Content Unavailable</title>"
+				      response-body)
 		      (not (string-match-p "^\\s-*{" response-body)))
                   ;; API unavailable, try scraping
                   (condition-case nil
@@ -420,7 +448,8 @@ If scraping also fails, returns the fallback verse."
                      (message "BibleGateway API and scraping unavailable, using fallback verse.")
                      fallback-result))
                 ;; API returned JSON, process it
-                (let* ((json-data (json-parse-string response-body :object-type 'hash-table))
+                (let* ((json-data
+			(json-parse-string response-body :object-type 'hash-table))
                        (votd (gethash "votd" json-data))
                        (raw-text (gethash "text" votd))
                        (verse-text (bible-gateway--decode-html raw-text))
@@ -431,8 +460,9 @@ If scraping also fails, returns the fallback verse."
                   (format "%s\n%s"
                           formatted-verse
                           (let ((ref-text verse-reference))
-                            (concat (make-string (- fill-width (length ref-text)) ?\s)
-                                    ref-text))))))))
+                            (concat
+			     (make-string (- fill-width (length ref-text)) ?\s)
+                             ref-text))))))))
       (error
        ;; Network error or timeout, try scraping first
        (condition-case nil
@@ -445,17 +475,18 @@ If scraping also fails, returns the fallback verse."
   "Fetch the Verse of the Day by scraping BibleGateway.
 Returns a single formatted string without verse numbers nor reference."
   (condition-case _err
-      (let ((url "https://www.biblegateway.com")
-            citation book passage)
-        ;; 1. Retrieve homepage and extract citation.
-        (with-current-buffer (url-retrieve-synchronously url t t bible-gateway-request-timeout)
+      (let ((url "https://www.biblegateway.com") citation book passage)
+        ;; 1. Retrieve homepage and extract reference.
+        (with-current-buffer
+	    (url-retrieve-synchronously url t t bible-gateway-request-timeout)
 	  (set-buffer-multibyte t)
 	  (decode-coding-region (point-min) (point-max) 'utf-8)
           (goto-char (point-min))
-          (when (re-search-forward "<span class=\"citation\">\\([^<]+\\)</span>" nil t)
+          (when(re-search-forward
+		"<span class=\"citation\">\\([^<]+\\)</span>" nil t)
             (setq citation (match-string 1))))
         (unless citation
-          (error "Citation not found"))
+          (error "Bible reference not found"))
 
         ;; 2. Split citation into book + passage.
         (let* ((parts (split-string citation " +" t))
@@ -463,55 +494,61 @@ Returns a single formatted string without verse numbers nor reference."
                (book (string-join (butlast parts) " ")))
           ;; 3. Capture passage output.
           (with-temp-buffer
-	    (let ((bible-gateway-include-ref nil))
+	    (let ((bible-gateway-include-ref t))
               (bible-gateway-get-passage book passage))
             (let* ((raw (buffer-string))
                    ;; Remove any success/status lines.
-                   (raw (replace-regexp-in-string "Bible passage inserted successfully!.*$" "" raw))
+                   (raw (replace-regexp-in-string
+			 "Bible passage inserted successfully!.*$" "" raw))
                    ;; Split into lines for filtering.
                    (lines (split-string raw "\n"))
                    kept)
 
               ;; 4. Remove header / reference / empty lines, and verse numbers.
-              (dolist (ln lines)
-                (let ((trim (string-trim ln))
-                      (skip nil))
-                  (when (or (string-match-p "\\`\\s-*\\'" trim)
-                            ;; Header line often contains passage and version.
-                            (and (string-match-p (regexp-quote passage) trim)
-                                 (string-match-p (format "(\\%s)" (regexp-quote bible-gateway-bible-version)) trim))
-                            ;; Any trailing reference line duplicated below.
-                            (and (string-match-p (regexp-quote citation) trim)
-                                 (string-match-p (regexp-quote bible-gateway-bible-version) trim)))
-                    (setq skip t))
-                  (unless skip
-                    ;; Remove verse numbers.
-                    (setq trim (replace-regexp-in-string "\\s-*\\([0-9]+\\)\\.\\s-*" " " trim))
-		    (when (length> trim 0)
-                      (push trim kept)))))
+	      (let ((local-ref nil))
+		(dolist (ln lines)
+                  (let ((trim (string-trim ln))
+			(skip nil))
+                    (when (or (string-match-p "\\`\\s-*\\'" trim)
+                              ;; Header line often contains passage and version.
+                              (and (string-match-p (regexp-quote passage) trim)
+                                   (string-match-p
+				    (regexp-quote (format "(%s)" bible-gateway-bible-version)) trim)
+				   (setq local-ref trim))
+			      ;; Any trailing reference line duplicated below.
+			      (and (string-match-p (regexp-quote citation) trim)
+				   (string-match-p (regexp-quote bible-gateway-bible-version) trim)))
+                      (setq skip t))
+                    (unless skip
+                      ;; Remove verse numbers.
+                      (setq trim (replace-regexp-in-string "\\s-*\\([0-9]+\\)\\.\\s-*" " " trim))
+		      (when (length> trim 0)
+			(push trim kept)))))
 
-              (setq kept (nreverse kept))
+		(setq kept (nreverse kept))
 
-              ;; 5. Join all remaining lines into one paragraph (space separated).
-              (let* ((joined (string-join kept " "))
-                     ;; Normalize whitespace.
-                     (joined (replace-regexp-in-string "\\s-+" " " joined))
-                     ;; Trim.
-                     (joined (string-trim joined)))
+		;; 5. Join all remaining lines into one paragraph (space separated).
+		(let* ((joined (string-join kept " "))
+                       ;; Normalize whitespace.
+                       (joined (replace-regexp-in-string "\\s-+" " " joined))
+                       ;; Trim.
+                       (joined (string-trim joined)))
 
-                ;; 6. Final format with your existing formatter.
-                (let* ((formatted (bible-gateway--format-verse joined))
-                       (ref-text (format "%s (%s)" citation bible-gateway-bible-version))
-                       (fill-width bible-gateway-text-width)
-                       (aligned-ref (concat (make-string (max 0 (- fill-width (length ref-text))) ?\s)
-                                            ref-text)))
-                  (format "%s\n%s" formatted aligned-ref)))))))
+		  ;; 6. Final format with your existing formatter.
+		  (let* ((formatted (bible-gateway--format-verse joined))
+			 (ref-text (or local-ref
+                                       (format "%s (%s)" citation bible-gateway-bible-version)))
+			 ;; (ref-text (format "%s (%s)" citation bible-gateway-bible-version))
+			 (fill-width bible-gateway-text-width)
+			 (aligned-ref (concat (make-string (max 0 (- fill-width (length ref-text))) ?\s)
+                                              ref-text)))
+                    (format "%s\n%s" formatted aligned-ref))))))))
     (error
      ;; Fallback verse.
      (let* ((formatted (bible-gateway--format-verse bible-gateway-fallback-verse))
             (ref-text bible-gateway-fallback-reference)
             (aligned-ref (concat (make-string (max 0 (- bible-gateway-text-width (length ref-text))) ?\s)
-                                 ref-text)))
+				 ref-text)))
        (format "%s\n%s" formatted aligned-ref)))))
 
 
@@ -569,6 +606,7 @@ cache ONLY if successful, and returns the verse."
 	     ("RUSV" bible-gateway-bible-books-rusv)
 	     ("LUTH1545" bible-gateway-bible-books-luth1545)
 	     ("DNB1930" bible-gateway-bible-books-dnb1930)
+	     ("BULG" bible-gateway-bible-books-bulg)
 	     (_ bible-gateway-bible-books-kjv)))
    nil t))
 
@@ -583,10 +621,12 @@ cache ONLY if successful, and returns the verse."
 		       ("RUSV" bible-gateway-bible-books-rusv)
 		       ("LUTH1545" bible-gateway-bible-books-luth1545)
 		       ("DNB1930" bible-gateway-bible-books-dnb1930)
+		       ("BULG" bible-gateway-bible-books-bulg)
 		       (_ bible-gateway-bible-books-kjv)))
          (max-chapters (cdr (assoc book books-list))))
     (unless max-chapters
-      (error "Could not find chapter count for book: %s in version %s" book bible-gateway-bible-version))
+      (error "Could not find chapter count for book: %s in version %s"
+	     book bible-gateway-bible-version))
     (let ((input (read-string
                   (format "Select passage from %s (1-%d): " book max-chapters))))
       (format "%s %s" book input))))

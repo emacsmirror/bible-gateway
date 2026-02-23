@@ -72,7 +72,7 @@ src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gatew
 
 Not available anymore due to Copyright.
 
-#### Search for a Keyword in BibleGateway and Display Results in Emacs
+#### Search for a Keyword in BibleGateway
 
 <img
 src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-search.gif?raw=true">
@@ -172,7 +172,7 @@ The Bible version/translation to use when fetching verses and passages. The foll
 - `"UKR"` - Ukrainian Bible
 - `"RUSV"` - Russian Synodal Version
 - `"LUTH1545"` - Luther Bible 1545 (German)
-- `"DNB1930""` - Det Norsk Bibelselskap 19330 (Norwegian)
+- `"DNB1930"` - Det Norsk Bibelselskap 19330 (Norwegian)
 
 #### `bible-gateway-text-width`
 
