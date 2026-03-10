@@ -98,13 +98,23 @@ src="https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gatew
 ## Introduction
 
 bible-gateway is a simple Emacs package that fetches content from
-[BibleGateway](https://www.biblegateway.com/). It retrieves data from the
-BibleGateway API in JSON format and formats the text and references accordingly.
-In addition to fetching the verse of the day, it can also insert any requested
-Bible verse, passage, or chapter(s) at point or in a dedicated buffer. The
-package also supports playing audio chapters directly in a browser tab and
-searching for a keyword in BibleGateway displaying the results in Emacs.  
+[BibleGateway](https://www.biblegateway.com/). It can fetch the verse of the
+day, insert any Bible verse, passage, or chapter(s) at point or in a dedicated
+buffer, play audio chapters in a browser tab, and search for keywords — all from
+within Emacs.
 
+### Disclaimer
+
+> [!IMPORTANT]
+> This package is not affiliated with or endorsed by BibleGateway or any Bible
+> copyright holder. It does not include or store any Bible text; all content is
+> fetched directly from BibleGateway. It does not store any content except the
+> verse of the day, which is cached locally to reduce unnecessary HTTPS
+> requests. This is a personal, non-commercial project that tests, supports, and
+> encourages the use of public domain translations. If you choose to use a
+> copyrighted Bible version, you are solely responsible for ensuring you have
+> the proper rights or licenses before using, distributing, or publishing any
+> content retrieved through this package.
 
 <!-- INSTALLATION -->
 ## Installation
