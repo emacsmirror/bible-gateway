@@ -17,10 +17,10 @@
 <p align="center">
   <h3 align="center">bible-gateway: A BibleGateway Client for Emacs</h3>  
   <p align="center">
-    <b>bible-gateway</b> is a simple Emacs package that fetches the
-    verse of the day from https://biblegateway.com, inserts Bible
-    passages at point, opens audio chapters in your browser, and searches
-	for keywords displaying the results in Emacs.
+    <b>bible-gateway</b> is a simple Emacs package that fetches the verse of the
+	day from https://biblegateway.com, inserts Bible passages at point or in a
+	dedicated buffer, opens audio chapters in your browser, and searches for
+    keywords displaying the results in Emacs.
     <br />
   </p>
 </p>
@@ -29,21 +29,18 @@
 
 **Features:**
 - Fetches the verse of the day for use as an
-  [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard)
-  footer or `*scratch*` buffer message.
-- Retrieves and inserts at point a requested verse, passage, or
-  chapter(s).
-- Provides autocompletion for Bible books and offers hints about
-  available chapters.
-- Supports various public domain Bible translations, including KJV
-  (English), LSG (French), RVA (Spanish), ALB (Albanian), UKR
-  (Ukrainian), RUSV (Russian), LUTH1545 (German), DNB1930 (Norwegian), ...
-- Prompts for a Bible chapter and plays the audio chapter from the
-  [Zondervan King James Audio
+  [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer
+  or `*scratch*` buffer message.
+- Inserts a Bible verse, passage, or chapter(s) at point or in a dedicated
+  buffer.
+- Autocompletes Bible books offering hints about available chapters.
+- Supports various public domain Bible translations, including KJV (English),
+  LSG (French), RVA (Spanish), ALB (Albanian), UKR (Ukrainian), RUSV (Russian),
+  LUTH1545 (German), DNB1930 (Norwegian), BULG (Bulgarian), ...
+- Plays audio chapters from the [Zondervan King James Audio
   Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
-- Prompts for a keyword to search BibleGateway and displays
-  the results in an Emacs buffer with clickable references and
-  pagination.
+- Searches [BibleGateway](https://www.biblegateway.com/) by keyword and displays
+  results in a buffer with clickable references and pagination.
 - 
 
 ------
@@ -104,9 +101,9 @@ bible-gateway is a simple Emacs package that fetches content from
 [BibleGateway](https://www.biblegateway.com/). It retrieves data from the
 BibleGateway API in JSON format and formats the text and references accordingly.
 In addition to fetching the verse of the day, it can also insert any requested
-Bible verse, passage, or chapter at the current point in the buffer. The package
-also supports playing audio chapters directly in a browser tab and searching for
-a keyword in BibleGateway displaying the results in Emacs.  
+Bible verse, passage, or chapter(s) at point or in a dedicated buffer. The
+package also supports playing audio chapters directly in a browser tab and
+searching for a keyword in BibleGateway displaying the results in Emacs.  
 
 
 <!-- INSTALLATION -->
@@ -173,6 +170,7 @@ The Bible version/translation to use when fetching verses and passages. The foll
 - `"RUSV"` - Russian Synodal Version
 - `"LUTH1545"` - Luther Bible 1545 (German)
 - `"DNB1930"` - Det Norsk Bibelselskap 19330 (Norwegian)
+- `"BULG"` - Bulgarian Bible
 
 #### `bible-gateway-text-width`
 
@@ -315,25 +313,28 @@ comment should do the trick.
   (add-hook! '+doom-dashboard-functions :append #'doom-dashboard-widget-bible-gateway))
 ```
 
-### Insert a Bible passage at point
+### Insert a Bible passage at point or in a dedicated buffer
 
 To insert a Bible passage in the current buffer, at point, invoke `M-x
 bible-gateway-get-passage`, start typing the Bible book and autocomplete with
-`TAB`. Hit `RET` once the book is selected and enter the desired passage. It
-is possible to request a single verse (John 3:16), a verse range (John
-3:16-17), a single chapter (John 3), and a chapter range (John 3-4).
-Hit `RET` in the end to view the content. Set the user option
-`bible-gateway-include-ref` to `t` to include the reference, or to `nil` to
-exclude it.  
+`TAB`. Hit `RET` once the book is selected and enter the desired passage. It is
+possible to request a single verse (John 3:16), a verse range (John 3:16-17), a
+single chapter (John 3), and a chapter range (John 3-4). Hit `RET` in the end to
+view the content. Set the user option `bible-gateway-include-ref` to `t` to
+include the reference, or to `nil` to exclude it. `M-x
+bible-gateway-read-passage' works similarly, but displays the
+content in a `*Bible Passage*' buffer in `text-mode'.  
 
 
-### Listen to a Bible chapter in your Browser
+### Listen to a Bible chapter in your browser
 
 To open the audio link for the selected chapter in your browser from Emacs,
-invoke `M-x bible-gateway-listen-passage`, start typing the Bible book and autocomplete with
-`TAB`. Hit `RET` once the book is selected and enter the chapter number.
-After hitting `RET` again, switch to your browser and click Play to listen to the chapter.
-Check out the [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true) above to see how it works. Note that this is
+invoke `M-x bible-gateway-listen-passage`, start typing the Bible book and
+autocomplete with `TAB`. Hit `RET` once the book is selected and enter the
+chapter number. After hitting `RET` again, switch to your browser and click Play
+to listen to the chapter. Check out the
+[demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true)
+above to see how it works. Note that this is
 available only for the KJV translation.  
 
 

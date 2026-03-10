@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.6.1
+;; Package-Version: 1.6.2
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@
 ;; BibleGateway.com. It can:
 ;;
 ;; - Fetch and display the Bible verse of the day
-;; - Insert Bible passages/chapters at point
+;; - Insert Bible passages/chapters at point or in a dedicated buffer
 ;; - Open audio chapters in your browser
 ;; - Search the Bible by keyword and display results in a dedicated buffer with
 ;;   clickable references and pagination
@@ -41,6 +41,9 @@
 ;; it at point. It can be called both interactively from
 ;; \\[execute-extended-command] or programmatically with the book name
 ;; and verse(s) as arguments.
+;;
+;; M-x `bible-gateway-read-passage' works like `bible-gateway-get-passage'
+;; but displays the passage in a dedicated buffer in `text-mode'.
 ;;
 ;; M-x `bible-gateway-listen-passage' plays a Bible chapter from KJV
 ;; Zondervan Audio in the browser.
@@ -66,7 +69,7 @@
   "The Bible version, default KJV.
 Other supported versions, which are available in the Public Domain, are
 LSG in French, RVA in Spanish, ALB in Albanian, UKR in Ukrainian, RUSV
-in Russian, LUTH1545 in German, and DNB1930 in Norwegian."
+in Russian, LUTH1545 in German, DNB1930 in Norwegian, and BULG in Bulgarian."
   :type 'string)
 
 (defcustom bible-gateway-text-width 80
@@ -665,8 +668,8 @@ Handling special cases like small-caps LORD or JESUS and UTF-8 encoding."
   "Wrap VERSE-TEXT according to window width with 4 spaces for wrapped lines."
   (with-temp-buffer
     (insert verse-text)
-    (let ((fill-prefix "    ")  ; 4 spaces for wrapped lines
-          (fill-column (- (window-width) 5))) ; window width minus some margin
+    (let ((fill-prefix "    ")
+          (fill-column (- (window-body-width) 5)))
       (fill-region (point-min) (point-max))
       (buffer-string))))
 
@@ -769,6 +772,52 @@ Please double-check that the chapter and verse numbers are valid."))))))
       ('error
        (message "Error while fetching the passage: %s" (error-message-string err))))))
 
+;;;###autoload
+(defun bible-gateway-read-passage (&optional book passage)
+  "Fetch a Bible passage and append it to the *Bible Gateway Passage* buffer.
+Like `bible-gateway-get-passage', but instead of inserting at point,
+the passage is appended to a dedicated bottom-window buffer.
+The buffer uses `text-mode' so you can freely edit, annotate, or accumulate
+passages for study.  BOOK and PASSAGE are handled identically to
+`bible-gateway-get-passage'."
+  (interactive)
+  ;; Hide the passage window if it's already visible, so it doesn't
+  ;; show during prompting.
+  (when-let ((existing-buf (get-buffer bible-gateway-passage-buffer-name))
+             (existing-win (get-buffer-window existing-buf)))
+    (when (window-deletable-p existing-win)
+      (delete-window existing-win)))
+  ;; Collect all user input FIRST, before touching any buffers/windows.
+  (let* ((book-supplied (and book (not (string-empty-p book))))
+         (passage-supplied (and passage (not (string-empty-p passage))))
+         (chosen-book (if book-supplied book (bible-gateway--prompt-book)))
+         (chosen-passage (if passage-supplied
+                             passage
+                           (let* ((raw (bible-gateway--prompt-chapter-verse chosen-book))
+                                  (trimmed (string-trim (substring raw (length chosen-book)))))
+                             (if (string-empty-p trimmed) "1" trimmed)))))
+    ;; All prompting is done. Now create/display the buffer.
+    (message "Fetching %s %s..." chosen-book chosen-passage)
+    (let ((buf (get-buffer-create bible-gateway-passage-buffer-name)))
+      (display-buffer buf '(display-buffer-at-bottom
+                            (window-height . 0.35)))
+      (when-let ((win (get-buffer-window buf)))
+        (select-window win)
+        (with-current-buffer buf
+          (unless (derived-mode-p 'text-mode)
+            (text-mode))
+          (goto-char (point-max))
+          (unless (bobp)
+            (insert "\n\n"))
+          (let ((start (point))
+                (bible-gateway-include-ref t))
+            (bible-gateway-get-passage chosen-book chosen-passage)
+            ;; Place cursor just after the reference line,
+            ;; right before the first verse.
+            (goto-char start)
+            (forward-line 2)))))))
+
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;   Package Section III - Play Bible chapter from KJV Dramatized Audio       ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -832,10 +881,10 @@ Please double-check that the chapter and verse numbers are valid."))))))
 ;;       Package Section IV - Search the Bible by Keyword                     ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defvar bible-gateway-search-buffer-name "*Bible Gateway Search*"
+(defvar bible-gateway-search-buffer-name "*Bible Search*"
   "Name of the buffer used to display Bible search results.")
 
-(defvar bible-gateway-passage-buffer-name "*Bible Gateway Passage*"
+(defvar bible-gateway-passage-buffer-name "*Bible Passage*"
   "Name of the buffer used to display a passage from search results.")
 
 (defun bible-gateway--build-search-url (keyword &optional start)
@@ -989,7 +1038,7 @@ Returns a plist (:count N :keyword KEYWORD :start S :results ((ref . text) ...))
   (with-temp-buffer
     (insert text)
     (let ((fill-prefix (make-string indent ?\s))
-	  (fill-column (- (window-width) 5)))
+	  (fill-column (- (window-body-width) 5)))
       (fill-region (point-min) (point-max))
       (buffer-string))))
 
