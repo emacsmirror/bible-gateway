@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.6.2
+;; Package-Version: 1.6.3
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -320,7 +320,7 @@ but have everlasting life."
   (with-temp-file bible-gateway-cache-file
     (let ((print-length nil)
           (print-level nil))
-      (insert ";; Bible Gateway Verse of the Day Cache\n")
+      (insert ";; BibleGateway Verse of the Day\n")
   (prin1 `(:date ,date :data ,data) (current-buffer)))))
 
 (defun bible-gateway--read-cache ()
@@ -774,11 +774,12 @@ Please double-check that the chapter and verse numbers are valid."))))))
 
 ;;;###autoload
 (defun bible-gateway-read-passage (&optional book passage)
-  "Fetch a Bible passage and append it to the *Bible Gateway Passage* buffer.
+  "Fetch a Bible passage and append it to the *Bible Passage* buffer.
 Like `bible-gateway-get-passage', but instead of inserting at point,
-the passage is appended to a dedicated bottom-window buffer.
-The buffer uses `text-mode' so you can freely edit, annotate, or accumulate
-passages for study.  BOOK and PASSAGE are handled identically to
+the passage is appended to a dedicated read-only buffer in
+`bible-gateway-passage-mode'.  Each verse is tagged so that \\`n' and
+\\`p' highlight one verse at a time.  Subsequent calls accumulate
+passages.  BOOK and PASSAGE are handled identically to
 `bible-gateway-get-passage'."
   (interactive)
   ;; Hide the passage window if it's already visible, so it doesn't
@@ -798,24 +799,52 @@ passages for study.  BOOK and PASSAGE are handled identically to
                              (if (string-empty-p trimmed) "1" trimmed)))))
     ;; All prompting is done. Now create/display the buffer.
     (message "Fetching %s %s..." chosen-book chosen-passage)
-    (let ((buf (get-buffer-create bible-gateway-passage-buffer-name)))
-      (display-buffer buf '(display-buffer-at-bottom
-                            (window-height . 0.35)))
+    (let ((buf (get-buffer-create bible-gateway-passage-buffer-name))
+          (passage-start nil))
+      (display-buffer buf '(display-buffer-full-frame))
       (when-let ((win (get-buffer-window buf)))
         (select-window win)
         (with-current-buffer buf
-          (unless (derived-mode-p 'text-mode)
-            (text-mode))
-          (goto-char (point-max))
-          (unless (bobp)
-            (insert "\n\n"))
-          (let ((start (point))
-                (bible-gateway-include-ref t))
-            (bible-gateway-get-passage chosen-book chosen-passage)
-            ;; Place cursor just after the reference line,
-            ;; right before the first verse.
-            (goto-char start)
-            (forward-line 2)))))))
+          (let ((inhibit-read-only t))
+            (goto-char (point-max))
+            (unless (bobp)
+              (insert "\n\n"))
+            (setq passage-start (point))
+            (let ((bible-gateway-include-ref t))
+              (bible-gateway-get-passage chosen-book chosen-passage)
+              ;; Tag each verse with a text property.
+              ;; A verse starts at "N. " and ends right before the next "N. "
+              ;; or at the end of the inserted text.
+              (save-excursion
+                (goto-char passage-start)
+                (while (re-search-forward
+                        "^[0-9]+\\.\\s-+" nil t)
+                  (let ((verse-start (match-beginning 0))
+                        (verse-end
+                         (save-excursion
+                           (if (re-search-forward "^[0-9]+\\.\\s-+" nil t)
+                               (1- (match-beginning 0))
+                             (point-max)))))
+                    (put-text-property verse-start verse-end
+                                       'bible-gateway-verse t))))
+              ;; Place cursor just after the reference line.
+              (goto-char passage-start)
+              (forward-line 2)))
+          ;; Remove any existing verse highlight.
+          (when (and bible-gateway-passage--highlight-overlay
+                     (overlay-buffer bible-gateway-passage--highlight-overlay))
+            (delete-overlay bible-gateway-passage--highlight-overlay)
+            (setq bible-gateway-passage--highlight-overlay nil))
+          (bible-gateway-passage-mode)
+          ;; Highlight the first verse of the just-added passage.
+          (let ((new-first nil)
+                (verses (bible-gateway-passage--verse-positions))
+                (idx 0))
+            (dolist (v verses)
+              (when (and (not new-first) (>= (car v) passage-start))
+                (setq new-first idx))
+              (setq idx (1+ idx)))
+            (bible-gateway-passage--highlight-index (or new-first 0))))))))
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1018,6 +1047,11 @@ Returns a plist (:count N :keyword KEYWORD :start S :results ((ref . text) ...))
 (defface bible-gateway-search-header-face
   '((t :inherit font-lock-comment-face :weight bold))
   "Face for the search results header line."
+  :group 'bible-gateway)
+
+(defface bible-gateway-verse-highlight-face
+  '((t :inherit highlight :extend t))
+  "Face used to highlight the current verse in `bible-gateway-passage-mode'."
   :group 'bible-gateway)
 
 (defun bible-gateway--highlight-keyword (text keyword)
@@ -1275,20 +1309,102 @@ For example, \"1 Chronicles 5:7\" returns (\"1 Chronicles\" . \"5:7\")."
   (setq-local truncate-lines nil)
   (setq-local word-wrap t))
 
+(defvar-local bible-gateway-passage--highlight-overlay nil
+  "Overlay used to highlight the current verse.")
+
+(defun bible-gateway-passage--verse-positions ()
+  "Return a sorted list of (START . END) for every verse in the buffer.
+A verse is any region of text with the `bible-gateway-verse' property."
+  (let ((positions '())
+        (pos (point-min)))
+    (while (setq pos (next-single-property-change pos 'bible-gateway-verse))
+      (when (get-text-property pos 'bible-gateway-verse)
+        (let ((end (or (next-single-property-change pos 'bible-gateway-verse)
+                       (point-max))))
+          (push (cons pos end) positions)
+          (setq pos end))))
+    (nreverse positions)))
+
+(defun bible-gateway-passage--current-index ()
+  "Return the index of the currently highlighted verse, or -1."
+  (if (and bible-gateway-passage--highlight-overlay
+           (overlay-buffer bible-gateway-passage--highlight-overlay))
+      (let ((ov-start (overlay-start bible-gateway-passage--highlight-overlay))
+            (verses (bible-gateway-passage--verse-positions))
+            (idx 0))
+        (catch 'found
+          (dolist (v verses)
+            (when (= (car v) ov-start)
+              (throw 'found idx))
+            (setq idx (1+ idx)))
+          -1))
+    -1))
+
+(defun bible-gateway-passage--highlight-index (index)
+  "Highlight the verse at INDEX (0-based)."
+  (let ((verses (bible-gateway-passage--verse-positions)))
+    (when (and (>= index 0) (< index (length verses)))
+      (let ((v (nth index verses)))
+        (if (and bible-gateway-passage--highlight-overlay
+                 (overlay-buffer bible-gateway-passage--highlight-overlay))
+            (move-overlay bible-gateway-passage--highlight-overlay (car v) (cdr v))
+          (setq bible-gateway-passage--highlight-overlay
+                (make-overlay (car v) (cdr v)))
+          (overlay-put bible-gateway-passage--highlight-overlay
+                       'face 'bible-gateway-verse-highlight-face))
+        (goto-char (car v))))))
+
+(defun bible-gateway-passage--next ()
+  "Highlight the next verse."
+  (interactive)
+  (let* ((cur (bible-gateway-passage--current-index))
+         (next (1+ cur))
+         (total (length (bible-gateway-passage--verse-positions))))
+    (if (< next total)
+        (bible-gateway-passage--highlight-index next)
+      (message "Last verse."))))
+
+(defun bible-gateway-passage--prev ()
+  "Highlight the previous verse."
+  (interactive)
+  (let* ((cur (bible-gateway-passage--current-index))
+         (prev (1- cur)))
+    (if (>= prev 0)
+        (bible-gateway-passage--highlight-index prev)
+      (message "First verse."))))
+
 (defvar bible-gateway-passage-mode-map
   (let ((map (make-sparse-keymap)))
     (set-keymap-parent map special-mode-map)
+    (define-key map (kbd "n") #'bible-gateway-passage--next)
+    (define-key map (kbd "p") #'bible-gateway-passage--prev)
     map)
   "Keymap for `bible-gateway-passage-mode'.")
 
 (define-derived-mode bible-gateway-passage-mode special-mode "Bible-Passage"
-  "Major mode for displaying a Bible passage from search results.
-Press `q' to close.
+  "Major mode for reading Bible passages.
+The buffer is read-only.  Use \\`n' and \\`p' to move the highlight
+between verses, and \\`q' to close.
 
 \\{bible-gateway-passage-mode-map}"
   :group 'bible-gateway
   (setq-local truncate-lines nil)
   (setq-local word-wrap t))
+
+;; (defvar bible-gateway-passage-mode-map
+;;   (let ((map (make-sparse-keymap)))
+;;     (set-keymap-parent map special-mode-map)
+;;     map)
+;;   "Keymap for `bible-gateway-passage-mode'.")
+
+;; (define-derived-mode bible-gateway-passage-mode special-mode "Bible-Passage"
+;;   "Major mode for displaying a Bible passage from search results.
+;; Press `q' to close.
+
+;; \\{bible-gateway-passage-mode-map}"
+;;   :group 'bible-gateway
+;;   (setq-local truncate-lines nil)
+;;   (setq-local word-wrap t))
 
 ;;;###autoload
 (defun bible-gateway-search (keyword)

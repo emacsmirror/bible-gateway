@@ -19,7 +19,7 @@
   <p align="center">
     <b>bible-gateway</b> is a simple Emacs package that fetches the verse of the
 	day from https://biblegateway.com, inserts Bible passages at point or in a
-	dedicated buffer, opens audio chapters in your browser, and searches for
+	dedicated buffer for reading, opens audio chapters in your browser, and searches for
     keywords displaying the results in Emacs.
     <br />
   </p>
@@ -32,7 +32,7 @@
   [emacs-dashboard](https://github.com/emacs-dashboard/emacs-dashboard) footer
   or `*scratch*` buffer message.
 - Inserts a Bible verse, passage, or chapter(s) at point or in a dedicated
-  buffer.
+  buffer for reading.
 - Autocompletes Bible books offering hints about available chapters.
 - Supports various public domain Bible translations, including KJV (English),
   LSG (French), RVA (Spanish), ALB (Albanian), UKR (Ukrainian), RUSV (Russian),
@@ -331,10 +331,7 @@ bible-gateway-get-passage`, start typing the Bible book and autocomplete with
 possible to request a single verse (John 3:16), a verse range (John 3:16-17), a
 single chapter (John 3), and a chapter range (John 3-4). Hit `RET` in the end to
 view the content. Set the user option `bible-gateway-include-ref` to `t` to
-include the reference, or to `nil` to exclude it. `M-x
-bible-gateway-read-passage' works similarly, but displays the
-content in a `*Bible Passage*' buffer in `text-mode'.  
-
+include the reference, or to `nil` to exclude it. `M-x bible-gateway-read-passage` works similarly, but displays the content in a read-only *Bible Passage* buffer where the current verse is highlighted and you can navigate with n/p to the next/previous verse.  
 
 ### Listen to a Bible chapter in your browser
 
@@ -346,7 +343,6 @@ to listen to the chapter. Check out the
 [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-listen-passage-in-browser.gif?raw=true)
 above to see how it works. Note that this is
 available only for the KJV translation.  
-
 
 ### Listen a Bible chapter in Emacs using EMMS
 
