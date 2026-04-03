@@ -498,7 +498,7 @@ If scraping also fails, returns the fallback verse."
   "Fetch the Verse of the Day by scraping BibleGateway.
 Returns a single formatted string without verse numbers nor reference."
   (condition-case _err
-      (let ((url "https://www.biblegateway.com") citation book passage)
+      (let ((url "https://www.biblegateway.com") citation)
         ;; 1. Retrieve homepage and extract reference.
         (with-current-buffer
 	    (url-retrieve-synchronously url t t bible-gateway-request-timeout)
@@ -797,8 +797,11 @@ If neither, prompt for both."
 		(message
 		 (concat "Sorry, we didn’t find any results for your search.
 Please double-check that the chapter and verse numbers are valid."))))))
-      ('error
+      (error
        (message "Error while fetching the passage: %s" (error-message-string err))))))
+
+(defvar bible-gateway-passage-buffer-name)
+(defvar bible-gateway-passage--highlight-overlay)
 
 ;;;###autoload
 (defun bible-gateway-read-passage (&optional book passage)
@@ -990,7 +993,8 @@ Optional START is the result offset for pagination (default 0)."
 (defun bible-gateway--parse-search-results (keyword &optional start)
   "Fetch and parse BibleGateway search results for KEYWORD.
 Optional START is the result offset for pagination.
-Returns a plist (:count N :keyword KEYWORD :start S :results ((ref . text) ...))."
+Returns a plist with keys :count, :keyword, :start, and :results,
+where :results is a list of (ref . text) cons cells."
   (let ((url (bible-gateway--build-search-url keyword start))
 	(count 0)
 	(results '()))
@@ -1226,18 +1230,6 @@ DATA is a plist as returned by `bible-gateway--parse-search-results'."
 	;; Preserve total count if the new page didn't find it
 	(when (zerop (plist-get data :count))
 	  (plist-put data :count total))
-	(bible-gateway--display-search-results data)))))
-
-(defun bible-gateway-search--prev-page ()
-  "Fetch and display the previous page of search results."
-  (interactive)
-  (if (<= bible-gateway-search--start 0)
-      (message "Already on the first page.")
-    (let* ((rpp bible-gateway-search-results-per-page)
-	   (prev-start (max 0 (- bible-gateway-search--start rpp))))
-      (message "Fetching previous page...")
-      (let ((data (bible-gateway--parse-search-results
-		   bible-gateway-search--keyword prev-start)))
 	(bible-gateway--display-search-results data)))))
 
 (defun bible-gateway-search--open-passage ()
