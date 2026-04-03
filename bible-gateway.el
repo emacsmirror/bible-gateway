@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.6.3
+;; Package-Version: 1.6.4
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -58,7 +58,7 @@
 (require 'cl-lib)
 
 (defgroup bible-gateway nil
-  "Package that fetches the Bible verse of the day from BibleGateway."
+  "A BibleGateway client package."
   :group 'external)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -285,7 +285,6 @@ but have everlasting life."
     ("2 Йоаново" . 1) ("3 Йоаново" . 1) ("Юда" . 1) ("Откровение" . 22))
   "List of Bible books (BULG version) with their number of chapters.")
 
-
 (defconst bible-gateway-version-names
   '(("KJV" . "King James Version")
     ("LSG" . "Louis Segond")
@@ -294,8 +293,29 @@ but have everlasting life."
     ("UKR" . "Ukrainian Bible")
     ("RUSV" . "Russian Synodal Version")
     ("LUTH1545" . "Luther Bible 1545")
-    ("DNB1930" . "Det Norsk Bibelselskap 1930"))
+    ("DNB1930" . "Det Norsk Bibelselskap 1930")
+    ("BULG" . "Bulgarian Bible"))
   "Mapping of Bible version codes to their full names.")
+
+;;;###autoload
+(defun bible-gateway-set-version ()
+  "Interactively select and set the active Bible version.
+Updates `bible-gateway-bible-version' for the current session.
+Use `customize-variable' to persist the change across sessions."
+  (interactive)
+  (let* ((choices (mapcar (lambda (pair)
+                            (format "%-10s %s" (car pair) (cdr pair)))
+                          bible-gateway-version-names))
+         (selection (completing-read
+                     (format "Bible version (current: %s): "
+                             bible-gateway-bible-version)
+                     choices nil t))
+         (code (car (split-string (string-trim selection)))))
+    (setq bible-gateway-bible-version code)
+    (message "BibleGateway: version set to %s (%s)"
+             code
+             (or (cdr (assoc code bible-gateway-version-names)) code))))
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                           Caching Mechanism                                ;
@@ -590,6 +610,14 @@ cache ONLY if successful, and returns the verse."
           ;; Return the result (whether real or fallback)
           result)))))
 
+
+;;;###autoload
+(defun bible-gateway-clear-cache ()
+  "Delete the cached verse of the day, forcing a fresh fetch next time."
+  (interactive)
+  (when (file-exists-p bible-gateway-cache-file)
+    (delete-file bible-gateway-cache-file)
+    (message "BibleGateway cache cleared.")))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                     Package section II - Fetch a Bible Passage             ;
@@ -1423,6 +1451,44 @@ Press q to close the buffer."
     (message "%d results for \"%s\"."
 	     (plist-get data :count) keyword)))
 
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                     Package Section V - Transient Menu                     ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(require 'transient)
+
+(defun bible-gateway--version-description ()
+  "Return a string showing the active Bible version for the transient header."
+  (let ((code bible-gateway-bible-version)
+        (name (cdr (assoc bible-gateway-bible-version bible-gateway-version-names))))
+    (if name
+        (format "%s - %s" code name)
+      (format "%s" code))))
+
+;;;###autoload
+(defun bible-gateway-show-verse ()
+  "Fetch and display the verse of the day in the echo area."
+  (interactive)
+  (message "%s" (bible-gateway-get-verse)))
+
+;;;###autoload
+(transient-define-prefix bible-gateway ()
+  "Transient menu for bible-gateway commands."
+  ["Passages"
+   :description (lambda ()
+                  (concat "BibleGateway ("
+                          (bible-gateway--version-description) ")\n\nPassages"))
+   ("v" "Verse of the day" bible-gateway-show-verse)
+   ("i" "Insert Bible passage" bible-gateway-get-passage)
+   ("r" "Read Bible passage" bible-gateway-read-passage)]
+  ["Audio"
+   ("l" "Listen to chapter (KJV by Dramatized)" bible-gateway-listen-passage)]
+  ["Search"
+   ("s" "Search by keyword" bible-gateway-search)]
+  ["Settings & Utilities"
+   ("V" "Set Bible version" bible-gateway-set-version)
+   ("c" "Clear verse-of-the-day cache" bible-gateway-clear-cache)])
 
 (provide 'bible-gateway)
 ;;; bible-gateway.el ends here
