@@ -69,7 +69,7 @@
   "The Bible version, default KJV.
 Other supported versions, which are available in the Public Domain, are
 LSG in French, RVA in Spanish, ALB in Albanian, UKR in Ukrainian, RUSV
-in Russian, LUTH1545 in German, DNB1930 in Norwegian, and BULG in Bulgarian."
+in Russian, LUTH1545 in German, DNB1930 in Norwegian, BULG in Bulgarian, and SV1917 in Swedish."
   :type 'string)
 
 (defcustom bible-gateway-text-width 80
@@ -285,6 +285,29 @@ but have everlasting life."
     ("2 Йоаново" . 1) ("3 Йоаново" . 1) ("Юда" . 1) ("Откровение" . 22))
   "List of Bible books (BULG version) with their number of chapters.")
 
+(defconst bible-gateway-bible-books-sv1917
+  '(("1 Mosebok" . 50) ("2 Mosebok" . 40) ("3 Mosebok" . 27) ("4 Mosebok" . 36)
+    ("5 Mosebok" . 34) ("Josua" . 24) ("Domarboken" . 21) ("Rut" . 4)
+    ("1 Samuelsboken" . 31) ("2 Samuelsboken" . 24) ("1 Kungaboken" . 22)
+    ("2 Kungaboken" . 25) ("1 Krönikeboken" . 29) ("2 Krönikeboken" . 36)
+    ("Esra" . 10) ("Nehemja" . 13)
+    ("Ester" . 10) ("Job" . 42) ("Psaltaren" . 150) ("Ordspråksboken" . 31)
+    ("Predikaren" . 12) ("Höga Visan" . 8) ("Jesaja" . 66) ("Jeremia" . 52)
+    ("Klagovisorna" . 5) ("Hesekiel" . 48) ("Daniel" . 12) ("Hosea" . 14)
+    ("Joel" . 3) ("Amos" . 9) ("Obadja" . 1) ("Jona" . 4) ("Mika" . 7)
+    ("Nahum" . 3) ("Habackuk" . 3) ("Sefanja" . 3) ("Haggai" . 2)
+    ("Sakaria" . 14) ("Malaki" . 4) ("Matteus" . 28) ("Markus" . 16)
+    ("Lukas" . 24) ("Johannes" . 21) ("Apostlagärningarna" . 28)
+    ("Romarbrevet" . 16) ("1 Korinthierbrevet" . 16) ("2 Korinthierbrevet" . 13)
+    ("Galaterbrevet" . 6) ("Efesierbrevet" . 6) ("Filipperbrevet" . 4)
+    ("Kolosserbrevet" . 4) ("1 Thessalonikerbrevet" . 5)
+    ("2 Thessalonikerbrevet" . 3) ("1 Timotheosbrevet" . 6)
+    ("2 Timotheosbrevet" . 4) ("Titusbrevet" . 3) ("Filemonbrevet" . 1)
+    ("Hebreerbrevet" . 13) ("Jakobsbrevet" . 5) ("1 Petrusbrevet" . 5)
+    ("2 Petrusbrevet" . 3) ("1 Johannesbrevet" . 5) ("2 Johannesbrevet" . 1)
+    ("3 Johannesbrevet" . 1) ("Judasbrevet" . 1) ("Uppenbarelseboken" . 22))
+  "List of Bible books (SV1917 version) with their number of chapters.")
+
 (defconst bible-gateway-version-names
   '(("KJV" . "King James Version")
     ("LSG" . "Louis Segond")
@@ -294,7 +317,8 @@ but have everlasting life."
     ("RUSV" . "Russian Synodal Version")
     ("LUTH1545" . "Luther Bible 1545")
     ("DNB1930" . "Det Norsk Bibelselskap 1930")
-    ("BULG" . "Bulgarian Bible"))
+    ("BULG" . "Bulgarian Bible")
+    ("SV1917" . "Svenska 1917"))
   "Mapping of Bible version codes to their full names.")
 
 ;;;###autoload
@@ -638,6 +662,7 @@ cache ONLY if successful, and returns the verse."
 	     ("LUTH1545" bible-gateway-bible-books-luth1545)
 	     ("DNB1930" bible-gateway-bible-books-dnb1930)
 	     ("BULG" bible-gateway-bible-books-bulg)
+	     ("SV1917" bible-gateway-bible-books-sv1917)
 	     (_ bible-gateway-bible-books-kjv)))
    nil t))
 
@@ -653,6 +678,7 @@ cache ONLY if successful, and returns the verse."
 		       ("LUTH1545" bible-gateway-bible-books-luth1545)
 		       ("DNB1930" bible-gateway-bible-books-dnb1930)
 		       ("BULG" bible-gateway-bible-books-bulg)
+		       ("SV1917" bible-gateway-bible-books-sv1917)
 		       (_ bible-gateway-bible-books-kjv)))
          (max-chapters (cdr (assoc book books-list))))
     (unless max-chapters
