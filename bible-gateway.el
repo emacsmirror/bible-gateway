@@ -100,6 +100,11 @@ but have everlasting life."
   "Maximum number of search results to fetch per query."
   :type 'natnum)
 
+(defcustom bible-gateway-use-english-book-names nil
+  "If non-nil, use English book names for completion regardless of version.
+The query to BibleGateway is still sent using the localized book name."
+  :type 'boolean)
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ;;                     Bible books in supported languages                     ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -342,6 +347,36 @@ but have everlasting life."
     ("SV1917" . "Svenska 1917")
     ("DN1933" . "Dette er Biblen på dansk"))
   "Mapping of Bible version codes to their full names.")
+
+(defun bible-gateway--version-books ()
+  "Return the book list for the current `bible-gateway-bible-version'."
+  (pcase bible-gateway-bible-version
+    ("KJV"     bible-gateway-bible-books-kjv)
+    ("LSG"     bible-gateway-bible-books-lsg)
+    ("RVA"     bible-gateway-bible-books-rva)
+    ("ALB"     bible-gateway-bible-books-alb)
+    ("UKR"     bible-gateway-bible-books-ukr)
+    ("RUSV"    bible-gateway-bible-books-rusv)
+    ("LUTH1545" bible-gateway-bible-books-luth1545)
+    ("DNB1930" bible-gateway-bible-books-dnb1930)
+    ("BULG"    bible-gateway-bible-books-bulg)
+    ("SV1917"  bible-gateway-bible-books-sv1917)
+    ("DN1933"  bible-gateway-bible-books-dn1933)
+    (_         bible-gateway-bible-books-kjv)))
+
+(defun bible-gateway--localize-book (display-name)
+  "Return the localized book name for DISPLAY-NAME.
+If `bible-gateway-use-english-book-names' is nil, DISPLAY-NAME is already
+localized and is returned as-is.  Otherwise, DISPLAY-NAME is a KJV name and
+is mapped positionally to the localized equivalent in the current version."
+  (if (not bible-gateway-use-english-book-names)
+      display-name
+    (let* ((kjv-names (mapcar #'car bible-gateway-bible-books-kjv))
+           (index (cl-position display-name kjv-names :test #'string=))
+           (version-books (bible-gateway--version-books)))
+      (if index
+          (car (nth index version-books))
+        display-name)))) ; fallback: return as-is
 
 ;;;###autoload
 (defun bible-gateway-set-version ()
@@ -669,48 +704,82 @@ cache ONLY if successful, and returns the verse."
 ;;                     Package section II - Fetch a Bible Passage             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
-(defun bible-gateway--prompt-book ()
-  "Prompt for a Bible book name with completion based on selected Bible version."
-  (completing-read
-   "Select a Book: "
-   (mapcar #'car  ; Get just the book names for completion
-	   (pcase bible-gateway-bible-version
-	     ("KJV" bible-gateway-bible-books-kjv)
-	     ("LSG" bible-gateway-bible-books-lsg)
-	     ("RVA" bible-gateway-bible-books-rva)
-	     ("ALB" bible-gateway-bible-books-alb)
-	     ("UKR" bible-gateway-bible-books-ukr)
-	     ("RUSV" bible-gateway-bible-books-rusv)
-	     ("LUTH1545" bible-gateway-bible-books-luth1545)
-	     ("DNB1930" bible-gateway-bible-books-dnb1930)
-	     ("BULG" bible-gateway-bible-books-bulg)
-	     ("SV1917" bible-gateway-bible-books-sv1917)
-	     ("DN1933" bible-gateway-bible-books-dn1933)
-	     (_ bible-gateway-bible-books-kjv)))
-   nil t))
+;; (defun bible-gateway--prompt-book ()
+;;   "Prompt for a Bible book name with completion based on selected Bible version."
+;;   (completing-read
+;;    "Select a Book: "
+;;    (mapcar #'car  ; Get just the book names for completion
+;; 	   (pcase bible-gateway-bible-version
+;; 	     ("KJV" bible-gateway-bible-books-kjv)
+;; 	     ("LSG" bible-gateway-bible-books-lsg)
+;; 	     ("RVA" bible-gateway-bible-books-rva)
+;; 	     ("ALB" bible-gateway-bible-books-alb)
+;; 	     ("UKR" bible-gateway-bible-books-ukr)
+;; 	     ("RUSV" bible-gateway-bible-books-rusv)
+;; 	     ("LUTH1545" bible-gateway-bible-books-luth1545)
+;; 	     ("DNB1930" bible-gateway-bible-books-dnb1930)
+;; 	     ("BULG" bible-gateway-bible-books-bulg)
+;; 	     ("SV1917" bible-gateway-bible-books-sv1917)
+;; 	     ("DN1933" bible-gateway-bible-books-dn1933)
+;; 	     (_ bible-gateway-bible-books-kjv)))
+;;    nil t))
 
-(defun bible-gateway--prompt-chapter-verse (book)
-  "Prompt for a chapter and verse for the BOOK."
-  (let* ((books-list (pcase bible-gateway-bible-version
-		       ("KJV" bible-gateway-bible-books-kjv)
-		       ("LSG" bible-gateway-bible-books-lsg)
-		       ("RVA" bible-gateway-bible-books-rva)
-		       ("ALB" bible-gateway-bible-books-alb)
-		       ("UKR" bible-gateway-bible-books-ukr)
-		       ("RUSV" bible-gateway-bible-books-rusv)
-		       ("LUTH1545" bible-gateway-bible-books-luth1545)
-		       ("DNB1930" bible-gateway-bible-books-dnb1930)
-		       ("BULG" bible-gateway-bible-books-bulg)
-		       ("SV1917" bible-gateway-bible-books-sv1917)
-		       ("DN1933" bible-gateway-bible-books-dn1933)
-		       (_ bible-gateway-bible-books-kjv)))
-         (max-chapters (cdr (assoc book books-list))))
+(defun bible-gateway--prompt-book ()
+  "Prompt for a Bible book name with completion.
+If `bible-gateway-use-english-book-names' is non-nil, show KJV names
+for completion regardless of the active version; the selected name is
+later localized by `bible-gateway--localize-book' before querying."
+  (let ((display-list (mapcar #'car
+                              (if bible-gateway-use-english-book-names
+                                  bible-gateway-bible-books-kjv
+                                (bible-gateway--version-books)))))
+    (completing-read
+     "Select a Book: "
+     (lambda (str pred action)
+       (if (eq action 'metadata)
+           '(metadata (display-sort-function . identity)
+                      (cycle-sort-function   . identity))
+         (complete-with-action action display-list str pred)))
+     nil t)))
+
+;; (defun bible-gateway--prompt-chapter-verse (book)
+;;   "Prompt for a chapter and verse for the BOOK."
+;;   (let* ((books-list (pcase bible-gateway-bible-version
+;; 		       ("KJV" bible-gateway-bible-books-kjv)
+;; 		       ("LSG" bible-gateway-bible-books-lsg)
+;; 		       ("RVA" bible-gateway-bible-books-rva)
+;; 		       ("ALB" bible-gateway-bible-books-alb)
+;; 		       ("UKR" bible-gateway-bible-books-ukr)
+;; 		       ("RUSV" bible-gateway-bible-books-rusv)
+;; 		       ("LUTH1545" bible-gateway-bible-books-luth1545)
+;; 		       ("DNB1930" bible-gateway-bible-books-dnb1930)
+;; 		       ("BULG" bible-gateway-bible-books-bulg)
+;; 		       ("SV1917" bible-gateway-bible-books-sv1917)
+;; 		       ("DN1933" bible-gateway-bible-books-dn1933)
+;; 		       (_ bible-gateway-bible-books-kjv)))
+;;          (max-chapters (cdr (assoc book books-list))))
+;;     (unless max-chapters
+;;       (error "Could not find chapter count for book: %s in version %s"
+;; 	     book bible-gateway-bible-version))
+;;     (let ((input (read-string
+;;                   (format "Select passage from %s (1-%d): " book max-chapters))))
+;;       (format "%s %s" book input))))
+
+(defun bible-gateway--prompt-chapter-verse (display-book)
+  "Prompt for a chapter/verse for DISPLAY-BOOK.
+DISPLAY-BOOK may be a KJV name (when `bible-gateway-use-english-book-names'
+is non-nil) or an already-localized name.  Returns a string of the form
+\"LOCALIZED-BOOK CHAPTER[:VERSE]\" ready to be sent to BibleGateway."
+  (let* ((localized-book (bible-gateway--localize-book display-book))
+         (books-list (bible-gateway--version-books))
+         (max-chapters (cdr (assoc localized-book books-list))))
     (unless max-chapters
       (error "Could not find chapter count for book: %s in version %s"
-	     book bible-gateway-bible-version))
+             localized-book bible-gateway-bible-version))
     (let ((input (read-string
-                  (format "Select passage from %s (1-%d): " book max-chapters))))
-      (format "%s %s" book input))))
+                  (format "Select passage from %s (1-%d): "
+                          display-book max-chapters))))
+      (format "%s %s" localized-book input))))
 
 (defun bible-gateway--process-verse-text (text)
   "Process verse TEXT.

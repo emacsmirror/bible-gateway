@@ -240,6 +240,41 @@ When non-nil, include the reference citation (e.g., "John 3 (KJV)")
 when inserting Bible passages with `bible-gateway-get-passage`. Set to
 `nil` to insert only the passage text without the reference.
 
+#### `bible-gateway-search-results-per-page`
+
+**Type:** natnum (positive integer)  
+**Default:** `100`
+
+Maximum number of search results to fetch per query when using
+`bible-gateway-search`.
+
+#### `bible-gateway-use-english-book-names`
+
+**Type:** boolean  
+**Default:** `nil`
+
+When non-nil, book name completion always uses **English names** regardless of
+the active Bible version set in `bible-gateway-bible-version`. The query sent to
+BibleGateway is still made using the correct localized name for the selected
+version — the English names are used **only** in the completion UI.
+
+This is useful when working with non-English translations (e.g. `DN1933`,
+`SV1917`, `DNB1930`) and you find it easier to type familiar English book names
+rather than their localized equivalents. It also ensures that the completion
+list is always presented in **canonical Bible order**, unaffected by completion
+history or framework-specific sorting.
+
+**Example:**
+```commonlisp
+;; Always show English book names in completion, even when reading Danish
+(setq bible-gateway-bible-version "DN1933")
+(setq bible-gateway-use-english-book-names t)
+```
+
+With this configuration, typing `Gen` in the completion prompt will
+match `Genesis`, but the passage will be fetched as `1 Mosebog` from
+BibleGateway.
+
 
 ### `*scratch*` buffer message
 
