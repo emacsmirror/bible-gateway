@@ -180,7 +180,7 @@ The Bible version/translation to use when fetching verses and passages. The foll
 - `"UKR"` - Ukrainian Bible
 - `"RUSV"` - Russian Synodal Version
 - `"LUTH1545"` - Luther Bible 1545 (German)
-- `"DNB1930"` - Det Norsk Bibelselskap 19330 (Norwegian)
+- `"DNB1930"` - Det Norsk Bibelselskap 1930 (Norwegian)
 - `"BULG"` - Bulgarian Bible
 - `"SV1917"` - Svenska 1917 (Swedish)
 - `"DN1933"` - Dette er Biblen på dansk (Danish)
@@ -370,7 +370,10 @@ bible-gateway-get-passage`, start typing the Bible book and autocomplete with
 possible to request a single verse (John 3:16), a verse range (John 3:16-17), a
 single chapter (John 3), and a chapter range (John 3-4). Hit `RET` in the end to
 view the content. Set the user option `bible-gateway-include-ref` to `t` to
-include the reference, or to `nil` to exclude it. `M-x bible-gateway-read-passage` works similarly, but displays the content in a read-only *Bible Passage* buffer where the current verse is highlighted and you can navigate with n/p to the next/previous verse.  
+include the reference, or to `nil` to exclude it. `M-x
+bible-gateway-read-passage` works similarly, but displays the content in a
+read-only *Bible Passage* buffer where the current verse is highlighted and you
+can navigate with `n/p` or `j/k` to the next/previous verse.  
 
 ### Listen to a Bible chapter in your browser
 
@@ -401,8 +404,8 @@ To search for a keyword in BibleGateway and display the results in Emacs, invoke
 results will be displayed in a new Emacs buffer with clickable references and
 pagination links at the bottom of the buffer.
 
-Click or press RET on a reference to view the passage in context. Press `n/p` to
-navigate between results, `N/P` to navigate between pages, and `q` to close the
+Click or press RET on a reference to view the passage in context. Press `n/p` or
+`j/k` to navigate between results, `N/P` to navigate between pages, and `q` to close the
 buffer. Check out the
 [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-search.gif?raw=true)
 above to see how it works.
