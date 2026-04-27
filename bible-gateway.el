@@ -6,7 +6,7 @@
 ;; Keywords: convenience comm hypermedia
 ;; Homepage: https://github.com/kristjoc/bible-gateway
 ;; Package-Requires: ((emacs "29.1"))
-;; Package-Version: 1.6.5
+;; Package-Version: 1.6.6
 
 ;; This program is free software; you can redistribute it and/or modify
 ;; it under the terms of the GNU General Public License as published by
@@ -24,15 +24,19 @@
 ;;; Commentary:
 
 ;; bible-gateway is a simple package that fetches content from
-;; BibleGateway.com. It can:
+;; [BibleGateway.com](http://BibleGateway.com). It can:
 ;;
 ;; - Fetch and display the Bible verse of the day
 ;; - Insert Bible passages/chapters at point or in a dedicated buffer
 ;; - Open audio chapters in your browser
 ;; - Search the Bible by keyword and display results in a dedicated buffer with
 ;;   clickable references and pagination
+;; - Follow a daily reading plan from a CSV file
 ;;
 ;; Usage:
+;;
+;; A transient menu (M-x `bible-gateway') gives access to all the
+;; commands above.
 ;;
 ;; `bible-gateway-get-verse' fetches the verse of the day for use as
 ;; an emacs-dashboard footer or a scratch buffer message.
@@ -50,6 +54,10 @@
 ;;
 ;; M-x `bible-gateway-search' prompts for a search query, fetches results
 ;; from BibleGateway, and displays them in a dedicated buffer.
+;;
+;; M-x `bible-gateway-read-today' fetches all of today's passages from
+;; the active reading plan (set via `bible-gateway-reading-plan') and
+;; displays them in a single buffer.
 
 ;;; Code:
 
@@ -1539,7 +1547,148 @@ Press q to close the buffer."
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;;                     Package Section V - Transient Menu                     ;
+;;                   Package Section V - Bible Reading Plan                   ;
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defcustom bible-gateway-plans-dir
+  (locate-user-emacs-file "bible-gateway/plans/")
+  "Directory containing reading-plan CSV files.
+
+Each CSV must have a header row with columns Date,Passage and use
+ISO dates (YYYY-MM-DD) in column 1.  The Passage column may contain
+one or more references separated by semicolons, e.g.
+\"Gen 1; Mat 1; Ezr 1; Acts 1\".
+
+Row 1 of the CSV defines the start date of the plan; subsequent
+rows are read in order and matched against the current date."
+  :type 'directory
+  :group 'bible-gateway)
+
+(defcustom bible-gateway-reading-plan nil
+  "Filename of the active reading plan inside `bible-gateway-plans-dir'.
+Set to nil to disable reading-plan commands.  Example:
+  (setq bible-gateway-reading-plan \"bibleplan.csv\")"
+  :type '(choice (const :tag "None" nil) string)
+  :group 'bible-gateway)
+
+(defun bible-gateway--plan-file ()
+  "Return the absolute path to the active plan CSV, or signal an error."
+  (unless bible-gateway-reading-plan
+    (user-error
+     "No reading plan set.  Customize `bible-gateway-reading-plan'"))
+  (let ((path (expand-file-name bible-gateway-reading-plan
+                                bible-gateway-plans-dir)))
+    (unless (file-readable-p path)
+      (user-error "Reading plan not found: %s" path))
+    path))
+
+(defconst bible-gateway--csv-book-translations
+  '(("Sos" . "Song")     ; Song of Solomon
+    ("Jdg" . "Judges")
+    ("Joe" . "Joel")
+    ("Oba" . "Obadiah")
+    ("Amo" . "Amos")
+    ("Eze" . "Ezekiel")
+    ("Rut" . "Ruth"))
+  "Translation map from CSV abbreviations to BibleGateway-friendly names.
+
+Some CSV exporters (such as bibleplangenerator) use short forms
+that BibleGateway does not recognize.  This map is consulted only
+for plan rendering; abbreviations not in the map pass through
+unchanged.")
+
+(defun bible-gateway--translate-csv-book (book)
+  "Translate BOOK from CSV abbreviation to BibleGateway-friendly name.
+Returns BOOK unchanged if no translation is defined."
+  (or (cdr (assoc book bible-gateway--csv-book-translations))
+      book))
+
+(defun bible-gateway--parse-csv-row (line)
+  "Parse a single CSV LINE into (DATE . PASSAGE) or nil if malformed.
+Handles double-quoted fields; expects exactly two columns."
+  (when (string-match
+         "\\`\"\\([^\"]*\\)\",\"\\([^\"]*\\)\"\\s-*\\'"
+         line)
+    (cons (match-string 1 line) (match-string 2 line))))
+
+(defun bible-gateway--plan-lookup (date)
+  "Return the passage string scheduled for DATE in the active plan.
+DATE is a string in YYYY-MM-DD form.  Returns nil if not found."
+  (with-temp-buffer
+    (insert-file-contents (bible-gateway--plan-file))
+    (goto-char (point-min))
+    (forward-line 1)            ; skip header
+    (let (result)
+      (while (and (not result) (not (eobp)))
+        (let* ((line (buffer-substring-no-properties
+                      (line-beginning-position) (line-end-position)))
+               (row (bible-gateway--parse-csv-row line)))
+          (when (and row (string= (car row) date))
+            (setq result (cdr row))))
+        (forward-line 1))
+      result)))
+
+(defun bible-gateway--split-references (passage)
+  "Split PASSAGE \"Gen 1; Mat 1; Ezr 1\" into a list of trimmed references."
+  (mapcar #'string-trim (split-string passage ";" t)))
+
+(defun bible-gateway--parse-reference (ref)
+  "Parse REF into a (BOOK . PASSAGE) cons.
+
+REF is a single Bible reference such as \"Gen 1\", \"Mat 9-10\",
+\"1 Sa 3:16\", or \"Song of Solomon 2:1-7\".  Returns a cons of
+(BOOK . PASSAGE) where PASSAGE is the chapter/verse portion (may
+contain colons and hyphens) and BOOK is everything before it.
+
+The parser walks back from the end: the trailing run of digits,
+colons, hyphens, and commas is the passage; everything before is
+the book.  Returns nil if REF cannot be parsed."
+  (let ((trimmed (string-trim ref)))
+    (when (string-match "\\`\\(.+?\\)[ \t]+\\([0-9][0-9:,-]*\\)\\'" trimmed)
+      (cons (string-trim (match-string 1 trimmed))
+            (match-string 2 trimmed)))))
+
+(defun bible-gateway--render-plan-day (date passage)
+  "Render PASSAGE (semicolon-separated refs) for DATE in the passage buffer."
+  (let ((references (bible-gateway--split-references passage))
+        (buf (get-buffer-create bible-gateway-passage-buffer-name)))
+    (with-current-buffer buf
+      (let ((inhibit-read-only t))
+        (erase-buffer)
+        (insert (format "Reading Plan — %s\n" date))
+        (insert (make-string bible-gateway-text-width ?=) "\n\n")
+        (dolist (ref references)
+          (let ((parsed (bible-gateway--parse-reference ref)))
+            (cond
+             (parsed
+              (insert (format "── %s ──\n\n" ref))
+              (bible-gateway-get-passage
+               (bible-gateway--translate-csv-book (car parsed))
+               (cdr parsed))
+              (goto-char (point-max))
+              (insert "\n\n"))
+             (t
+              (insert (format "── %s ──\n\n" ref))
+              (insert (format "(could not parse reference: %s)\n\n" ref))))))
+        (goto-char (point-min)))
+      (bible-gateway-passage-mode))
+    (pop-to-buffer buf)))
+
+;;;###autoload
+(defun bible-gateway-read-today ()
+  "Open today's readings from the active reading plan in one buffer.
+References are concatenated with headers separating each passage."
+  (interactive)
+  (let* ((today (format-time-string "%Y-%m-%d"))
+         (passage (bible-gateway--plan-lookup today)))
+    (unless passage
+      (user-error "No reading scheduled for %s in %s"
+                  today bible-gateway-reading-plan))
+    (bible-gateway--render-plan-day today passage)))
+
+
+;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;;                     Package Section VI - Transient Menu                    ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 
 (require 'transient)
@@ -1560,16 +1709,17 @@ Press q to close the buffer."
 
 ;;;###autoload
 (transient-define-prefix bible-gateway ()
-  "Transient menu for bible-gateway commands."
+  "Transient menu for 'bible-gateway' commands."
   ["Passages"
    :description (lambda ()
                   (concat "BibleGateway ("
                           (bible-gateway--version-description) ")\n\nPassages"))
    ("v" "Verse of the day" bible-gateway-show-verse)
    ("i" "Insert Bible passage" bible-gateway-get-passage)
-   ("r" "Read Bible passage" bible-gateway-read-passage)]
+   ("r" "Read Bible passage" bible-gateway-read-passage)
+   ("p" "Today's reading" bible-gateway-read-today)]
   ["Audio"
-   ("l" "Listen to chapter (KJV by Dramatized)" bible-gateway-listen-passage)]
+   ("l" "Listen to chapter (KJV Dramatized)" bible-gateway-listen-passage)]
   ["Search"
    ("s" "Search by keyword" bible-gateway-search)]
   ["Settings & Utilities"

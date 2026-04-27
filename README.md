@@ -42,6 +42,8 @@
   Bible](https://www.biblegateway.com/audio/dramatized/kjv/Gen.1).
 - Searches [BibleGateway](https://www.biblegateway.com/) by keyword and displays
   results in a buffer with clickable references and pagination.
+- Follows a daily Bible reading plan from a CSV file, opening all of today's
+  passages in a single buffer.
 - 
 
 ------
@@ -275,6 +277,46 @@ With this configuration, typing `Gen` in the completion prompt will
 match `Genesis`, but the passage will be fetched as `1 Mosebog` from
 BibleGateway.
 
+#### `bible-gateway-plans-dir`
+
+**Type:** directory
+**Default:** `~/.emacs.d/bible-gateway/plans/`
+
+Directory where reading-plan CSV files are stored. Create this directory and
+drop your plan CSV(s) inside.
+
+#### `bible-gateway-reading-plan`
+
+**Type:** string or `nil`
+**Default:** `nil`
+
+Filename of the active reading plan (relative to `bible-gateway-plans-dir`). Set
+this to enable the `M-x bible-gateway-read-today` command.
+
+**Example:**
+```commonlisp
+(setq bible-gateway-reading-plan "bibleplan.csv")
+```
+
+The CSV must have a header row `"Date","Passage"` followed by ISO-dated rows
+(`YYYY-MM-DD`) with one or more semicolon-separated references per day:
+
+```csv
+"Date","Passage"
+"2026-01-01","Gen 1; Mat 1; Ezr 1; Acts 1"
+"2026-01-02","Gen 2; Mat 2; Ezr 2; Acts 2"
+```
+
+You can generate one with
+[bibleplangenerator](https://www.bibleplangenerator.com/) or hand-write your
+own.
+
+The CSV's book abbreviations are English regardless of the Bible version you
+read in. A French user with `(setq bible-gateway-bible-version "LSG")` can use
+the same English CSV and the readings will be fetched in French. The CSV
+selects *which* passages; `bible-gateway-bible-version` selects *what language*
+they're returned in.
+
 
 ### `*scratch*` buffer message
 
@@ -409,6 +451,17 @@ Click or press RET on a reference to view the passage in context. Press `n/p` or
 buffer. Check out the
 [demo](https://github.com/kristjoc/bible-gateway/blob/main/screenshots/bible-gateway-search.gif?raw=true)
 above to see how it works.
+
+### Read today's Bible plan
+
+Once `bible-gateway-reading-plan` is set and the CSV is in place, invoke `M-x
+bible-gateway-read-today` (or open the transient menu with `M-x bible-gateway`
+and press `p`). All of today's passages are fetched and displayed in a single
+*Bible Passage* buffer, separated by reference headers. Navigate with `n/p` or
+`j/k` between verses as in the regular passage buffer.
+
+If today's date is not present in the CSV (the plan hasn't started yet, or has
+already ended), Emacs displays a message and no buffer is opened.
 
 And that's it! God bless you! Have a great day! :-)
 
