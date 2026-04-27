@@ -279,7 +279,7 @@ BibleGateway.
 
 #### `bible-gateway-plans-dir`
 
-**Type:** directory
+**Type:** directory  
 **Default:** `~/.emacs.d/bible-gateway/plans/`
 
 Directory where reading-plan CSV files are stored. Create this directory and
@@ -287,7 +287,7 @@ drop your plan CSV(s) inside.
 
 #### `bible-gateway-reading-plan`
 
-**Type:** string or `nil`
+**Type:** string or `nil`  
 **Default:** `nil`
 
 Filename of the active reading plan (relative to `bible-gateway-plans-dir`). Set
@@ -308,7 +308,7 @@ The CSV must have a header row `"Date","Passage"` followed by ISO-dated rows
 ```
 
 You can generate one with
-[bibleplangenerator](https://www.bibleplangenerator.com/) or hand-write your
+[Bible Reading Plan Generator](https://biblereadingplangenerator.com/) or hand-write your
 own.
 
 The CSV's book abbreviations are English regardless of the Bible version you
