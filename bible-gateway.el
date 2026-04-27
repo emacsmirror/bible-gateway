@@ -1652,6 +1652,11 @@ the book.  Returns nil if REF cannot be parsed."
   "Render PASSAGE (semicolon-separated refs) for DATE in the passage buffer."
   (let ((references (bible-gateway--split-references passage))
         (buf (get-buffer-create bible-gateway-passage-buffer-name)))
+    ;; Drop any existing highlight before erasing.
+    (when (and bible-gateway-passage--highlight-overlay
+               (overlay-buffer bible-gateway-passage--highlight-overlay))
+      (delete-overlay bible-gateway-passage--highlight-overlay)
+      (setq bible-gateway-passage--highlight-overlay nil))
     (with-current-buffer buf
       (let ((inhibit-read-only t))
         (erase-buffer)
@@ -1661,17 +1666,35 @@ the book.  Returns nil if REF cannot be parsed."
           (let ((parsed (bible-gateway--parse-reference ref)))
             (cond
              (parsed
-              (insert (format "── %s ──\n\n" ref))
-              (bible-gateway-get-passage
-               (bible-gateway--translate-csv-book (car parsed))
-               (cdr parsed))
-              (goto-char (point-max))
-              (insert "\n\n"))
+              (let ((book (bible-gateway--translate-csv-book (car parsed)))
+                    (chap (cdr parsed))
+                    (passage-start (point)))
+                (insert (format "── %s ──\n\n" ref))
+                (let ((bible-gateway-include-ref t))
+                  (bible-gateway-get-passage book chap))
+                ;; Tag each verse so n/p navigation works.
+                (save-excursion
+                  (goto-char passage-start)
+                  (while (re-search-forward "^[0-9]+\\.\\s-+" nil t)
+                    (let ((vstart (match-beginning 0))
+                          (vend
+                           (save-excursion
+                             (if (re-search-forward "^[0-9]+\\.\\s-+" nil t)
+                                 (1- (match-beginning 0))
+                               (point-max)))))
+                      (put-text-property vstart vend
+                                         'bible-gateway-verse t))))
+                (goto-char (point-max))
+                (insert "\n\n")))
              (t
               (insert (format "── %s ──\n\n" ref))
               (insert (format "(could not parse reference: %s)\n\n" ref))))))
         (goto-char (point-min)))
-      (bible-gateway-passage-mode))
+      (bible-gateway-passage-mode)
+      ;; Highlight the first tagged verse.
+      (let ((verses (bible-gateway-passage--verse-positions)))
+        (when verses
+          (bible-gateway-passage--highlight-index 0))))
     (pop-to-buffer buf)))
 
 ;;;###autoload
